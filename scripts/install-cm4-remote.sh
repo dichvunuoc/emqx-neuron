@@ -31,8 +31,33 @@ if [[ "${EUID}" -ne 0 ]]; then
   SUDO="sudo"
 fi
 
+# Populated by resolve_docker_cli(): (docker) or (sudo docker)
+DOCKER_CLI=()
+
 need_cmd() {
   command -v "$1" >/dev/null 2>&1
+}
+
+# After usermod -aG docker, the current shell is still without the docker group until re-login.
+# Use sudo docker for pull/compose in that case so the install finishes in one run.
+resolve_docker_cli() {
+  if [[ "${EUID}" -eq 0 ]]; then
+    DOCKER_CLI=(docker)
+    echo ">> Docker CLI: docker (root)"
+    return
+  fi
+  if docker info >/dev/null 2>&1; then
+    DOCKER_CLI=(docker)
+    echo ">> Docker CLI: docker"
+    return
+  fi
+  if sudo docker info >/dev/null 2>&1; then
+    DOCKER_CLI=(sudo docker)
+    echo ">> Docker CLI: sudo docker (session not in docker group yet — re-login or run: newgrp docker)"
+    return
+  fi
+  echo "ERROR: Cannot connect to Docker daemon. Is docker.service running? Try: sudo systemctl status docker" >&2
+  exit 1
 }
 
 parse_args() {
@@ -117,12 +142,12 @@ ensure_docker() {
 }
 
 ensure_compose() {
-  if docker compose version >/dev/null 2>&1; then
+  if "${DOCKER_CLI[@]}" compose version >/dev/null 2>&1; then
     return
   fi
   echo ">> Installing Docker Compose plugin"
   ${SUDO} apt-get install -y -qq docker-compose-plugin || true
-  if ! docker compose version >/dev/null 2>&1; then
+  if ! "${DOCKER_CLI[@]}" compose version >/dev/null 2>&1; then
     echo "ERROR: docker compose plugin is required. Install docker-compose-plugin and retry." >&2
     exit 1
   fi
@@ -189,20 +214,20 @@ load_or_pull_image() {
   source .env
   if [[ -n "${IMAGE_TAR}" ]]; then
     echo ">> Loading image from ${IMAGE_TAR}"
-    docker load -i "${IMAGE_TAR}"
+    "${DOCKER_CLI[@]}" load -i "${IMAGE_TAR}"
     return
   fi
   if [[ -n "${NEURON_IMAGE:-}" ]]; then
     echo ">> Pulling image: ${NEURON_IMAGE}"
-    docker pull "${NEURON_IMAGE}"
+    "${DOCKER_CLI[@]}" pull "${NEURON_IMAGE}"
   fi
 }
 
 deploy() {
   cd "${INSTALL_DIR}"
   echo ">> Starting Neuron"
-  docker compose --env-file .env up -d
-  docker compose --env-file .env ps
+  "${DOCKER_CLI[@]}" compose --env-file .env up -d
+  "${DOCKER_CLI[@]}" compose --env-file .env ps
 }
 
 post_check() {
@@ -214,7 +239,7 @@ post_check() {
   if curl -fsS --connect-timeout 5 "http://127.0.0.1:${port}/" >/dev/null 2>&1; then
     echo ">> UI/API reachable"
   else
-    echo ">> UI/API not ready yet. Try: cd ${INSTALL_DIR} && docker compose --env-file .env logs --tail=200 neuron"
+    echo ">> UI/API not ready yet. Try: cd ${INSTALL_DIR} && ${DOCKER_CLI[*]} compose --env-file .env logs --tail=200 neuron"
   fi
 }
 
@@ -224,6 +249,7 @@ main() {
   echo ">> Compose/env source: ${SOURCE_BASE_URL}"
   ensure_prereqs
   ensure_docker
+  resolve_docker_cli
   ensure_compose
   ensure_install_dir
   download_deploy_files

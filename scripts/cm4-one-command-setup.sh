@@ -17,8 +17,28 @@ if [[ "${EUID}" -ne 0 ]]; then
   SUDO="sudo"
 fi
 
+DOCKER_CLI=()
+
 need_cmd() {
   command -v "$1" >/dev/null 2>&1
+}
+
+resolve_docker_cli() {
+  if [[ "${EUID}" -eq 0 ]]; then
+    DOCKER_CLI=(docker)
+    return
+  fi
+  if docker info >/dev/null 2>&1; then
+    DOCKER_CLI=(docker)
+    return
+  fi
+  if sudo docker info >/dev/null 2>&1; then
+    DOCKER_CLI=(sudo docker)
+    echo ">> Using sudo docker (re-login or newgrp docker to use docker without sudo)"
+    return
+  fi
+  echo "ERROR: Cannot connect to Docker daemon." >&2
+  exit 1
 }
 
 ensure_prereqs() {
@@ -54,7 +74,7 @@ ensure_docker() {
 }
 
 ensure_compose() {
-  if docker compose version >/dev/null 2>&1; then
+  if "${DOCKER_CLI[@]}" compose version >/dev/null 2>&1; then
     echo ">> Docker Compose plugin available"
     return
   fi
@@ -62,7 +82,7 @@ ensure_compose() {
   echo ">> Installing docker compose plugin"
   ${SUDO} apt-get install -y -qq docker-compose-plugin || true
 
-  if ! docker compose version >/dev/null 2>&1; then
+  if ! "${DOCKER_CLI[@]}" compose version >/dev/null 2>&1; then
     echo "ERROR: docker compose plugin is unavailable. Install it and rerun."
     exit 1
   fi
@@ -81,7 +101,7 @@ load_or_pull_image() {
   cd "${DEPLOY_DIR}"
   if [[ -n "${IMAGE_TAR}" ]]; then
     echo ">> Loading image tar: ${IMAGE_TAR}"
-    docker load -i "${IMAGE_TAR}"
+    "${DOCKER_CLI[@]}" load -i "${IMAGE_TAR}"
     return
   fi
 
@@ -91,7 +111,7 @@ load_or_pull_image() {
     source .env
     if [[ -n "${NEURON_IMAGE:-}" ]]; then
       echo ">> Pulling image: ${NEURON_IMAGE}"
-      docker pull "${NEURON_IMAGE}" || true
+      "${DOCKER_CLI[@]}" pull "${NEURON_IMAGE}" || true
     fi
   fi
 }
@@ -104,11 +124,11 @@ deploy() {
 post_check() {
   cd "${DEPLOY_DIR}"
   echo ">> Smoke check"
-  docker compose --env-file .env ps
+  "${DOCKER_CLI[@]}" compose --env-file .env ps
   if curl -fsS "http://127.0.0.1:${NEURON_HTTP_PORT:-7000}" >/dev/null; then
     echo ">> UI/API reachable"
   else
-    echo ">> UI/API not ready yet. Check: docker compose --env-file .env logs --tail=200 neuron"
+    echo ">> UI/API not ready yet. Check: ${DOCKER_CLI[*]} compose --env-file .env logs --tail=200 neuron"
   fi
 }
 
@@ -116,6 +136,7 @@ main() {
   echo "== Neuron CM4 one-command setup =="
   ensure_prereqs
   ensure_docker
+  resolve_docker_cli
   ensure_compose
   prepare_runtime
   load_or_pull_image

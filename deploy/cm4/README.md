@@ -52,6 +52,8 @@ curl -fsSL https://raw.githubusercontent.com/dichvunuoc/emqx-neuron/main/scripts
 
 (`--image` must match the tag loaded from the tar.)
 
+**`permission denied` on `/var/run/docker.sock`:** right after install, your user is in the `docker` group but the **current shell session** is not. The remote installer uses `sudo docker` automatically when needed so the run finishes in one shot. Alternatively: `newgrp docker` or log out and SSH back in, then `docker` works without `sudo`.
+
 ## 0b) One-command setup from a cloned repo
 
 From repository root on CM4:

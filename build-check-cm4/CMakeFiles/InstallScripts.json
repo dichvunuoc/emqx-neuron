@@ -1,0 +1,19 @@
+{
+	"InstallScripts" : 
+	[
+		"/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-check-cm4/cmake_install.cmake",
+		"/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-check-cm4/plugins/modbus/cmake_install.cmake",
+		"/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-check-cm4/plugins/opcua/cmake_install.cmake",
+		"/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-check-cm4/plugins/mqtt/cmake_install.cmake",
+		"/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-check-cm4/plugins/ekuiper/cmake_install.cmake",
+		"/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-check-cm4/plugins/file/cmake_install.cmake",
+		"/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-check-cm4/plugins/monitor/cmake_install.cmake",
+		"/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-check-cm4/plugins/kafka/cmake_install.cmake",
+		"/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-check-cm4/simulator/cmake_install.cmake",
+		"/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-check-cm4/tests/plugins/c1/cmake_install.cmake",
+		"/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-check-cm4/tests/plugins/s1/cmake_install.cmake",
+		"/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-check-cm4/tests/plugins/sc1/cmake_install.cmake",
+		"/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-check-cm4/tests/plugins/demo_app/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

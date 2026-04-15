@@ -59,6 +59,10 @@ find_package(Threads)
 set(OPENSSL_USE_STATIC_LIBS TRUE)
 find_package(OpenSSL REQUIRED)
 
+# Ensure libxml2 headers/libraries from find_package are always propagated.
+# This avoids distro-specific include path issues (e.g. /usr/include/libxml2).
+include_directories(${LIBXML2_INCLUDE_DIRS})
+
 if (CMAKE_STAGING_PREFIX)
   include_directories(${CMAKE_STAGING_PREFIX}/include)
   link_directories(${CMAKE_STAGING_PREFIX}/lib)
@@ -125,10 +129,10 @@ endif()
 add_library(neuron-base SHARED)
 target_sources(neuron-base PRIVATE ${NEURON_BASE_SOURCES} ${NEURON_SRC_PARSE} ${NEURON_SRC_OTEL}) 
 target_include_directories(neuron-base
-                           PRIVATE include/neuron src)
+                           PRIVATE include/neuron src ${LIBXML2_INCLUDE_DIRS})
 target_link_libraries(neuron-base OpenSSL::SSL OpenSSL::Crypto)
 target_link_libraries(neuron-base nng libzlog.so jansson jwt xml2
-                      ${CMAKE_THREAD_LIBS_INIT} -lm protobuf-c)
+                      ${CMAKE_THREAD_LIBS_INIT} -lm protobuf-c ${LIBXML2_LIBRARIES})
 add_dependencies(neuron-base neuron-version)
 
 # dependency imposed by nng
@@ -176,8 +180,8 @@ set(NEURON_SOURCES
 set(CMAKE_BUILD_RPATH ./)
 add_executable(neuron)
 target_sources(neuron PRIVATE ${NEURON_SOURCES}) 
-target_include_directories(neuron PRIVATE include/neuron src plugins)
-target_link_libraries(neuron dl neuron-base sqlite3 -lm xml2)
+target_include_directories(neuron PRIVATE include/neuron src plugins ${LIBXML2_INCLUDE_DIRS})
+target_link_libraries(neuron dl neuron-base sqlite3 -lm ${LIBXML2_LIBRARIES})
 target_link_options(neuron PRIVATE "LINKER:--dynamic-list-data")
 
 #copy file for run

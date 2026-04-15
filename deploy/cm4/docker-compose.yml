@@ -1,0 +1,27 @@
+services:
+  neuron:
+    image: ${NEURON_IMAGE:-neuron:cm4}
+    container_name: neuron-cm4
+    restart: unless-stopped
+    ports:
+      - "${NEURON_HTTP_PORT:-7000}:7000"
+    environment:
+      TZ: ${TZ:-UTC}
+      # Keep logs bounded on eMMC-constrained devices.
+      NEURON_LOG_LEVEL: ${NEURON_LOG_LEVEL:-info}
+    volumes:
+      - ./data/config:/opt/neuron/config
+      - ./data/logs:/opt/neuron/logs
+      - ./data/persistence:/opt/neuron/persistence
+      - ./data/dist:/opt/neuron/dist
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:7000 >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

@@ -117,6 +117,8 @@ See the quick start for a hands-on walkthrough.
 - CM4 Docker deployment: [deploy/cm4/README.md](./deploy/cm4/README.md)
 - CM4 one-command setup script: [scripts/cm4-one-command-setup.sh](./scripts/cm4-one-command-setup.sh)
 - CM4 remote install (`curl | bash`, no clone): [scripts/install-cm4-remote.sh](./scripts/install-cm4-remote.sh)
+  - Example (fork [dichvunuoc/emqx-neuron](https://github.com/dichvunuoc/emqx-neuron)):  
+    `curl -fsSL https://raw.githubusercontent.com/dichvunuoc/emqx-neuron/main/scripts/install-cm4-remote.sh | bash -s -- --public-image`
 
 ## Dashboard
 

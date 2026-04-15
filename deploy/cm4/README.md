@@ -6,37 +6,39 @@ This guide targets Raspberry Pi CM4-class devices (4GB RAM / 32GB eMMC).
 
 You do **not** need to copy the full source tree. The installer downloads `docker-compose.yml` and `.env.example` from GitHub (raw), installs Docker if needed, pulls an image, and starts Neuron.
 
-**Recommended:** pass the public Docker Hub image (ARM64 supported):
+This repo is published at **https://github.com/dichvunuoc/emqx-neuron** — use these URLs on the miniPC (branch `main`).
+
+**Recommended:** pull the public Docker Hub image (ARM64 supported):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/emqx/neuron/main/scripts/install-cm4-remote.sh | bash -s -- --image emqx/neuron:latest
+curl -fsSL https://raw.githubusercontent.com/dichvunuoc/emqx-neuron/main/scripts/install-cm4-remote.sh | bash -s -- --image emqx/neuron:latest
 ```
 
 Or use the convenience flag (same result):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/emqx/neuron/main/scripts/install-cm4-remote.sh | bash -s -- --public-image
+curl -fsSL https://raw.githubusercontent.com/dichvunuoc/emqx-neuron/main/scripts/install-cm4-remote.sh | bash -s -- --public-image
 ```
 
 **Custom registry** (image you built and pushed elsewhere):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/emqx/neuron/main/scripts/install-cm4-remote.sh | bash -s -- --image registry.example.com/iot/neuron:cm4
+curl -fsSL https://raw.githubusercontent.com/dichvunuoc/emqx-neuron/main/scripts/install-cm4-remote.sh | bash -s -- --image registry.example.com/iot/neuron:cm4
 ```
 
-**If `deploy/cm4` (or the installer script) only exists on your fork**, point both the script URL and `--source-base` at that fork:
+By default the installer loads compose files from the same fork (`dichvunuoc/emqx-neuron`, `main`). To use another GitHub tree, set `INSTALL_SCRIPT_REPO` / `INSTALL_SCRIPT_BRANCH` or pass `--source-base`:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/YOUR_USER/YOUR_FORK/main/scripts/install-cm4-remote.sh | bash -s -- \
-  --source-base https://raw.githubusercontent.com/YOUR_USER/YOUR_FORK/main/deploy/cm4/ \
+curl -fsSL https://raw.githubusercontent.com/dichvunuoc/emqx-neuron/main/scripts/install-cm4-remote.sh | bash -s -- \
+  --source-base https://raw.githubusercontent.com/emqx/neuron/main/deploy/cm4/ \
   --image emqx/neuron:latest
 ```
 
-You can also set only the compose base via env:
+Or only override the compose base:
 
 ```bash
-SOURCE_BASE_URL=https://raw.githubusercontent.com/YOUR_USER/YOUR_FORK/main/deploy/cm4/ \
-curl -fsSL https://raw.githubusercontent.com/emqx/neuron/main/scripts/install-cm4-remote.sh | bash -s -- --image emqx/neuron:latest
+SOURCE_BASE_URL=https://raw.githubusercontent.com/emqx/neuron/main/deploy/cm4/ \
+curl -fsSL https://raw.githubusercontent.com/dichvunuoc/emqx-neuron/main/scripts/install-cm4-remote.sh | bash -s -- --image emqx/neuron:latest
 ```
 
 Install directory defaults to `/opt/neuron-cm4`. Override with `INSTALL_DIR=/path` or `--install-dir /path`.
@@ -45,7 +47,7 @@ Install directory defaults to `/opt/neuron-cm4`. Override with `INSTALL_DIR=/pat
 
 ```bash
 IMAGE_TAR=/tmp/neuron-cm4-image.tar \
-curl -fsSL https://raw.githubusercontent.com/emqx/neuron/main/scripts/install-cm4-remote.sh | bash -s -- --image neuron:cm4
+curl -fsSL https://raw.githubusercontent.com/dichvunuoc/emqx-neuron/main/scripts/install-cm4-remote.sh | bash -s -- --image neuron:cm4
 ```
 
 (`--image` must match the tag loaded from the tar.)

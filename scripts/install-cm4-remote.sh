@@ -2,23 +2,26 @@
 # Neuron CM4 remote installer — works with: curl -fsSL <URL> | bash
 # No git clone required. Downloads compose + env template, installs Docker, runs container.
 #
-# Examples:
-#   curl -fsSL https://raw.githubusercontent.com/emqx/neuron/main/scripts/install-cm4-remote.sh | bash -s -- --image emqx/neuron:latest
+# Examples (this fork hosts deploy/cm4 + this script):
+#   curl -fsSL https://raw.githubusercontent.com/dichvunuoc/emqx-neuron/main/scripts/install-cm4-remote.sh | bash -s -- --image emqx/neuron:latest
 #
 #   NEURON_IMAGE=registry.example.com/neuron:cm4 \
-#   curl -fsSL https://raw.githubusercontent.com/emqx/neuron/main/scripts/install-cm4-remote.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/dichvunuoc/emqx-neuron/main/scripts/install-cm4-remote.sh | bash
 #
 # Env (optional):
 #   INSTALL_DIR       default /opt/neuron-cm4
 #   NEURON_IMAGE      Docker image (also use --image)
-#   SOURCE_BASE_URL   base URL for docker-compose.yml and .env.example (trailing / optional)
+#   INSTALL_SCRIPT_REPO / INSTALL_SCRIPT_BRANCH — default dichvunuoc/emqx-neuron + main; used to build default SOURCE_BASE_URL
+#   SOURCE_BASE_URL   override: base URL for docker-compose.yml and .env.example (trailing / optional)
 #   IMAGE_TAR         if set, docker load from this path instead of docker pull
 #   USE_PUBLIC_IMAGE  if 1 and NEURON_IMAGE unset, use emqx/neuron:latest in .env
 
 set -euo pipefail
 
 INSTALL_DIR="${INSTALL_DIR:-/opt/neuron-cm4}"
-SOURCE_BASE_URL="${SOURCE_BASE_URL:-https://raw.githubusercontent.com/emqx/neuron/main/deploy/cm4/}"
+INSTALL_SCRIPT_REPO="${INSTALL_SCRIPT_REPO:-dichvunuoc/emqx-neuron}"
+INSTALL_SCRIPT_BRANCH="${INSTALL_SCRIPT_BRANCH:-main}"
+SOURCE_BASE_URL="${SOURCE_BASE_URL:-https://raw.githubusercontent.com/${INSTALL_SCRIPT_REPO}/${INSTALL_SCRIPT_BRANCH}/deploy/cm4/}"
 NEURON_IMAGE="${NEURON_IMAGE:-}"
 IMAGE_TAR="${IMAGE_TAR:-}"
 USE_PUBLIC_IMAGE="${USE_PUBLIC_IMAGE:-0}"
@@ -71,6 +74,7 @@ Options:
 
 Environment:
   NEURON_IMAGE, SOURCE_BASE_URL, INSTALL_DIR, IMAGE_TAR, USE_PUBLIC_IMAGE=1
+  INSTALL_SCRIPT_REPO, INSTALL_SCRIPT_BRANCH (defaults: dichvunuoc/emqx-neuron, main)
 HELP
         exit 0
         ;;
@@ -217,6 +221,7 @@ post_check() {
 main() {
   echo "== Neuron CM4 remote install (no repo clone) =="
   echo ">> Install dir: ${INSTALL_DIR}"
+  echo ">> Compose/env source: ${SOURCE_BASE_URL}"
   ensure_prereqs
   ensure_docker
   ensure_compose

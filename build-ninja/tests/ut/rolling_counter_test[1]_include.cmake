@@ -1,0 +1,5 @@
+if(EXISTS "/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-ninja/tests/ut/rolling_counter_test[1]_tests.cmake")
+  include("/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-ninja/tests/ut/rolling_counter_test[1]_tests.cmake")
+else()
+  add_test(rolling_counter_test_NOT_BUILT rolling_counter_test_NOT_BUILT)
+endif()

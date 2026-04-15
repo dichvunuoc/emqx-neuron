@@ -1,0 +1,4 @@
+# ninja log v7
+4	58	1776182163419290998	CMakeFiles/neuron-version	22bb0c033b39a4a
+4	58	1776182163419290998	/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-ninja/CMakeFiles/neuron-version	22bb0c033b39a4a
+58	129	1776182163473773970	CMakeFiles/neuron-base.dir/src/base/tag_sort.c.o	87b1a8aca01740fc

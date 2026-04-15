@@ -1,0 +1,5 @@
+if(EXISTS "/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-ninja/tests/ut/async_queue_test[1]_tests.cmake")
+  include("/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-ninja/tests/ut/async_queue_test[1]_tests.cmake")
+else()
+  add_test(async_queue_test_NOT_BUILT async_queue_test_NOT_BUILT)
+endif()

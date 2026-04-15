@@ -1,0 +1,5 @@
+if(EXISTS "/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-ninja/tests/ut/tag_sort_test[1]_tests.cmake")
+  include("/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-ninja/tests/ut/tag_sort_test[1]_tests.cmake")
+else()
+  add_test(tag_sort_test_NOT_BUILT tag_sort_test_NOT_BUILT)
+endif()

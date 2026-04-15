@@ -1,0 +1,58 @@
+
+# Consider dependencies only in project.
+set(CMAKE_DEPENDS_IN_PROJECT_ONLY OFF)
+
+# The set of languages for which implicit dependencies are needed:
+set(CMAKE_DEPENDS_LANGUAGES
+  )
+
+# The set of dependency files which are needed:
+set(CMAKE_DEPENDS_DEPENDENCY_FILES
+  "/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/plugins/restful/adapter_handle.c" "CMakeFiles/neuron.dir/plugins/restful/adapter_handle.c.o" "gcc" "CMakeFiles/neuron.dir/plugins/restful/adapter_handle.c.o.d"
+  "/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/plugins/restful/cert_handle.c" "CMakeFiles/neuron.dir/plugins/restful/cert_handle.c.o" "gcc" "CMakeFiles/neuron.dir/plugins/restful/cert_handle.c.o.d"
+  "/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/plugins/restful/cid_handle.c" "CMakeFiles/neuron.dir/plugins/restful/cid_handle.c.o" "gcc" "CMakeFiles/neuron.dir/plugins/restful/cid_handle.c.o.d"
+  "/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/plugins/restful/datalayers_handle.c" "CMakeFiles/neuron.dir/plugins/restful/datalayers_handle.c.o" "gcc" "CMakeFiles/neuron.dir/plugins/restful/datalayers_handle.c.o.d"
+  "/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/plugins/restful/datatag_handle.c" "CMakeFiles/neuron.dir/plugins/restful/datatag_handle.c.o" "gcc" "CMakeFiles/neuron.dir/plugins/restful/datatag_handle.c.o.d"
+  "/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/plugins/restful/global_config_handle.c" "CMakeFiles/neuron.dir/plugins/restful/global_config_handle.c.o" "gcc" "CMakeFiles/neuron.dir/plugins/restful/global_config_handle.c.o.d"
+  "/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/plugins/restful/group_config_handle.c" "CMakeFiles/neuron.dir/plugins/restful/group_config_handle.c.o" "gcc" "CMakeFiles/neuron.dir/plugins/restful/group_config_handle.c.o.d"
+  "/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/plugins/restful/handle.c" "CMakeFiles/neuron.dir/plugins/restful/handle.c.o" "gcc" "CMakeFiles/neuron.dir/plugins/restful/handle.c.o.d"
+  "/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/plugins/restful/log_handle.c" "CMakeFiles/neuron.dir/plugins/restful/log_handle.c.o" "gcc" "CMakeFiles/neuron.dir/plugins/restful/log_handle.c.o.d"
+  "/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/plugins/restful/metric_handle.c" "CMakeFiles/neuron.dir/plugins/restful/metric_handle.c.o" "gcc" "CMakeFiles/neuron.dir/plugins/restful/metric_handle.c.o.d"
+  "/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/plugins/restful/normal_handle.c" "CMakeFiles/neuron.dir/plugins/restful/normal_handle.c.o" "gcc" "CMakeFiles/neuron.dir/plugins/restful/normal_handle.c.o.d"
+  "/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/plugins/restful/otel_handle.c" "CMakeFiles/neuron.dir/plugins/restful/otel_handle.c.o" "gcc" "CMakeFiles/neuron.dir/plugins/restful/otel_handle.c.o.d"
+  "/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/plugins/restful/plugin_handle.c" "CMakeFiles/neuron.dir/plugins/restful/plugin_handle.c.o" "gcc" "CMakeFiles/neuron.dir/plugins/restful/plugin_handle.c.o.d"
+  "/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/plugins/restful/rest.c" "CMakeFiles/neuron.dir/plugins/restful/rest.c.o" "gcc" "CMakeFiles/neuron.dir/plugins/restful/rest.c.o.d"
+  "/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/plugins/restful/rw_handle.c" "CMakeFiles/neuron.dir/plugins/restful/rw_handle.c.o" "gcc" "CMakeFiles/neuron.dir/plugins/restful/rw_handle.c.o.d"
+  "/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/plugins/restful/scan_handle.c" "CMakeFiles/neuron.dir/plugins/restful/scan_handle.c.o" "gcc" "CMakeFiles/neuron.dir/plugins/restful/scan_handle.c.o.d"
+  "/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/plugins/restful/simulator_handle.c" "CMakeFiles/neuron.dir/plugins/restful/simulator_handle.c.o" "gcc" "CMakeFiles/neuron.dir/plugins/restful/simulator_handle.c.o.d"
+  "/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/plugins/restful/system_handle.c" "CMakeFiles/neuron.dir/plugins/restful/system_handle.c.o" "gcc" "CMakeFiles/neuron.dir/plugins/restful/system_handle.c.o.d"
+  "/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/plugins/restful/tpy_handle.c" "CMakeFiles/neuron.dir/plugins/restful/tpy_handle.c.o" "gcc" "CMakeFiles/neuron.dir/plugins/restful/tpy_handle.c.o.d"
+  "/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/plugins/restful/user.c" "CMakeFiles/neuron.dir/plugins/restful/user.c.o" "gcc" "CMakeFiles/neuron.dir/plugins/restful/user.c.o.d"
+  "/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/plugins/restful/version_handle.c" "CMakeFiles/neuron.dir/plugins/restful/version_handle.c.o" "gcc" "CMakeFiles/neuron.dir/plugins/restful/version_handle.c.o.d"
+  "/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/simulator/modbus_tcp_simulator.c" "CMakeFiles/neuron.dir/simulator/modbus_tcp_simulator.c.o" "gcc" "CMakeFiles/neuron.dir/simulator/modbus_tcp_simulator.c.o.d"
+  "/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/src/adapter/adapter.c" "CMakeFiles/neuron.dir/src/adapter/adapter.c.o" "gcc" "CMakeFiles/neuron.dir/src/adapter/adapter.c.o.d"
+  "/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/src/adapter/driver/cache.c" "CMakeFiles/neuron.dir/src/adapter/driver/cache.c.o" "gcc" "CMakeFiles/neuron.dir/src/adapter/driver/cache.c.o.d"
+  "/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/src/adapter/driver/driver.c" "CMakeFiles/neuron.dir/src/adapter/driver/driver.c.o" "gcc" "CMakeFiles/neuron.dir/src/adapter/driver/driver.c.o.d"
+  "/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/src/adapter/msg_q.c" "CMakeFiles/neuron.dir/src/adapter/msg_q.c.o" "gcc" "CMakeFiles/neuron.dir/src/adapter/msg_q.c.o.d"
+  "/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/src/adapter/storage.c" "CMakeFiles/neuron.dir/src/adapter/storage.c.o" "gcc" "CMakeFiles/neuron.dir/src/adapter/storage.c.o.d"
+  "/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/src/argparse.c" "CMakeFiles/neuron.dir/src/argparse.c.o" "gcc" "CMakeFiles/neuron.dir/src/argparse.c.o.d"
+  "/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/src/core/manager.c" "CMakeFiles/neuron.dir/src/core/manager.c.o" "gcc" "CMakeFiles/neuron.dir/src/core/manager.c.o.d"
+  "/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/src/core/manager_internal.c" "CMakeFiles/neuron.dir/src/core/manager_internal.c.o" "gcc" "CMakeFiles/neuron.dir/src/core/manager_internal.c.o.d"
+  "/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/src/core/node_manager.c" "CMakeFiles/neuron.dir/src/core/node_manager.c.o" "gcc" "CMakeFiles/neuron.dir/src/core/node_manager.c.o.d"
+  "/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/src/core/plugin_manager.c" "CMakeFiles/neuron.dir/src/core/plugin_manager.c.o" "gcc" "CMakeFiles/neuron.dir/src/core/plugin_manager.c.o.d"
+  "/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/src/core/storage.c" "CMakeFiles/neuron.dir/src/core/storage.c.o" "gcc" "CMakeFiles/neuron.dir/src/core/storage.c.o.d"
+  "/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/src/core/subscribe.c" "CMakeFiles/neuron.dir/src/core/subscribe.c.o" "gcc" "CMakeFiles/neuron.dir/src/core/subscribe.c.o.d"
+  "/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/src/daemon.c" "CMakeFiles/neuron.dir/src/daemon.c.o" "gcc" "CMakeFiles/neuron.dir/src/daemon.c.o.d"
+  "/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/src/main.c" "CMakeFiles/neuron.dir/src/main.c.o" "gcc" "CMakeFiles/neuron.dir/src/main.c.o.d"
+  )
+
+# Targets to which this target links which contain Fortran sources.
+set(CMAKE_Fortran_TARGET_LINKED_INFO_FILES
+  )
+
+# Targets to which this target links which contain Fortran sources.
+set(CMAKE_Fortran_TARGET_FORWARD_LINKED_INFO_FILES
+  )
+
+# Fortran module output directory.
+set(CMAKE_Fortran_TARGET_MODULE_DIR "")

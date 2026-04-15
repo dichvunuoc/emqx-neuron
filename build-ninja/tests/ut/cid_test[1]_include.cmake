@@ -1,0 +1,5 @@
+if(EXISTS "/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-ninja/tests/ut/cid_test[1]_tests.cmake")
+  include("/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-ninja/tests/ut/cid_test[1]_tests.cmake")
+else()
+  add_test(cid_test_NOT_BUILT cid_test_NOT_BUILT)
+endif()

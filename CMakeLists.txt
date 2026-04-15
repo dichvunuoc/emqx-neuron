@@ -132,7 +132,7 @@ target_include_directories(neuron-base
                            PRIVATE include/neuron src ${LIBXML2_INCLUDE_DIRS})
 target_link_libraries(neuron-base OpenSSL::SSL OpenSSL::Crypto)
 target_link_libraries(neuron-base nng libzlog.so jansson jwt xml2
-                      ${CMAKE_THREAD_LIBS_INIT} -lm protobuf-c ${LIBXML2_LIBRARIES})
+                      ${CMAKE_THREAD_LIBS_INIT} -lm protobuf-c sqlite3 ${LIBXML2_LIBRARIES})
 add_dependencies(neuron-base neuron-version)
 
 # dependency imposed by nng

@@ -1,0 +1,22 @@
+# Ubuntu ARM64 + Docker CE — mimics Raspberry Pi OS / CM4 userland for local install tests.
+# Build (from repo root or this directory):
+#   docker compose -f deploy/cm4/docker-compose.cm4-sim.yml build
+#
+# On x86_64 hosts, enable QEMU binfmt first, e.g.:
+#   docker run --privileged --rm tonistiigi/binfmt --install all
+
+FROM --platform=linux/arm64 ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+     ca-certificates curl iptables gnupg lsb-release \
+  && curl -fsSL https://get.docker.com | sh \
+  && rm -rf /var/lib/apt/lists/*
+
+COPY docker-cm4-sim-entrypoint.sh /usr/local/bin/docker-cm4-sim-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-cm4-sim-entrypoint.sh
+
+ENTRYPOINT ["/usr/local/bin/docker-cm4-sim-entrypoint.sh"]
+CMD ["sleep", "infinity"]

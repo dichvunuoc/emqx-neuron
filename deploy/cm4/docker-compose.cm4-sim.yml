@@ -1,0 +1,34 @@
+# CM4-like ARM64 simulator: Ubuntu 22.04 + Docker-in-Docker for testing install-cm4-remote.sh
+#
+# Usage (from repository root):
+#   docker compose -f deploy/cm4/docker-compose.cm4-sim.yml build
+#   docker compose -f deploy/cm4/docker-compose.cm4-sim.yml run --rm -p ${NEURON_HTTP_PORT:-7000}:7000 cm4-sim bash
+#
+# Inside the container (dockerd starts automatically):
+#   export CM4_SIM_SKIP_HOST_SETUP=1
+#   curl -fsSL https://raw.githubusercontent.com/dichvunuoc/emqx-neuron/main/scripts/install-cm4-remote.sh | bash -s -- --public-image
+#   curl -fsS http://127.0.0.1:7000/ >/dev/null && echo OK
+#
+# From the host (after Neuron container is up inside sim; use NEURON_HTTP_PORT if not 7000):
+#   curl -fsS http://127.0.0.1:${NEURON_HTTP_PORT:-7000}/
+
+services:
+  cm4-sim:
+    build:
+      context: .
+      dockerfile: Dockerfile.cm4-sim
+    image: neuron-cm4-sim:local
+    platform: linux/arm64
+    container_name: neuron-cm4-sim
+    privileged: true
+    cgroup: host
+    stdin_open: true
+    tty: true
+    # Host port defaults to 7000; on macOS, AirPlay Receiver often binds :7000 — set NEURON_HTTP_PORT in .env
+    ports:
+      - "${NEURON_HTTP_PORT:-7000}:7000"
+    volumes:
+      - cm4-sim-docker-lib:/var/lib/docker
+
+volumes:
+  cm4-sim-docker-lib:

@@ -54,7 +54,43 @@ curl -fsSL https://raw.githubusercontent.com/dichvunuoc/emqx-neuron/main/scripts
 
 **`permission denied` on `/var/run/docker.sock`:** right after install, your user is in the `docker` group but the **current shell session** is not. The remote installer uses `sudo docker` automatically when needed so the run finishes in one shot. Alternatively: `newgrp docker` or log out and SSH back in, then `docker` works without `sudo`.
 
-## 0b) One-command setup from a cloned repo
+## 0b) CM4 simulator (Docker-in-Docker, ARM64)
+
+Use this to **dry-run the remote installer** on a laptop or VPS without a physical CM4: an Ubuntu **linux/arm64** image with Docker inside (nested), similar to Debian/Ubuntu on Raspberry Pi.
+
+**Requirements:** Docker with `linux/arm64` support. On **x86_64**, register QEMU once:
+
+```bash
+docker run --privileged --rm tonistiigi/binfmt --install all
+```
+
+**Run an interactive shell in the simulator:**
+
+```bash
+cd deploy/cm4
+docker compose -f docker-compose.cm4-sim.yml build
+docker compose -f docker-compose.cm4-sim.yml run --rm --service-ports cm4-sim bash
+```
+
+**Inside the simulator**, install Neuron (skip host `apt`/Docker bootstrap — already installed in the image):
+
+```bash
+export CM4_SIM_SKIP_HOST_SETUP=1
+curl -fsSL https://raw.githubusercontent.com/dichvunuoc/emqx-neuron/main/scripts/install-cm4-remote.sh | bash -s -- --public-image
+```
+
+Check from **inside** the simulator: `curl -fsS http://127.0.0.1:7000/`. With `--service-ports`, the same port is published on the **host** (default host port **7000**, overridable via `NEURON_HTTP_PORT` in `deploy/cm4/.env`) while the `run` session is active. On macOS, **AirPlay Receiver** often binds port 7000; if Docker reports “address already in use”, set e.g. `NEURON_HTTP_PORT=17000` in `.env` and use `http://127.0.0.1:17000/` from the host.
+
+**Test from a cloned repo (no curl to GitHub):**
+
+```bash
+export CM4_SIM_SKIP_HOST_SETUP=1
+bash /path/to/emqx-neuron/scripts/install-cm4-remote.sh --public-image
+```
+
+Files: [docker-compose.cm4-sim.yml](./docker-compose.cm4-sim.yml), [Dockerfile.cm4-sim](./Dockerfile.cm4-sim).
+
+## 0c) One-command setup from a cloned repo
 
 From repository root on CM4:
 
@@ -76,6 +112,29 @@ If deploying from image tar:
 ```bash
 IMAGE_TAR=/tmp/neuron-cm4-image.tar scripts/cm4-one-command-setup.sh
 ```
+
+## 0d) Native install from published repo (no Docker)
+
+If you need to run **your current source code** on CM4 (for example custom OPC UA changes or removed tag limits), use the native installer:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/<owner>/<repo>/<branch>/scripts/install-cm4-native-remote.sh | \
+  bash -s -- --repo https://github.com/<owner>/<repo>.git --branch <branch> --enable-service
+```
+
+What this does:
+- installs basic prerequisites (`git`, `curl`, certificates),
+- clones/updates your repo under `/opt/neuron/emqx-neuron`,
+- runs `scripts/build-native-cm4.sh` to compile from source directly on CM4,
+- optionally registers a systemd service (`neuron.service`) for auto-start.
+
+Useful flags:
+- `--install-root /opt/neuron`
+- `--src-dir-name emqx-neuron`
+- `--build-dir build-native-cm4`
+- `--build-jobs 2`
+- `--disable-datalayers 1`
+- `--skip-dashboard 0`
 
 ## 1) Build ARM64 image on a stronger host
 

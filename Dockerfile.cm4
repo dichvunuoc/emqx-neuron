@@ -1,41 +1,88 @@
 # ARM64-focused Neuron image for Raspberry Pi CM4 class devices.
 # Build example:
-#   docker buildx build --platform linux/arm64 -f Dockerfile.cm4 -t neuron:cm4 .
+#   docker buildx build --platform linux/arm64 -f Dockerfile.cm4 -t neuron:cm4 --load .
 # Run example:
 #   docker run --rm -p 7000:7000 neuron:cm4
 
-ARG BUILD_IMAGE=ghcr.io/neugates/build:arm64-main
-FROM ${BUILD_IMAGE} AS builder
+FROM ubuntu:22.04 AS builder
 
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update -qq && apt-get install -y -qq git ca-certificates wget unzip && \
+RUN apt-get update -qq && apt-get install -y -qq \
+    build-essential cmake git pkg-config ca-certificates wget unzip curl python3 \
+    libssl-dev libxml2-dev libmbedtls-dev libsqlite3-dev \
+    libprotobuf-c-dev librdkafka-dev zlib1g-dev && \
     rm -rf /var/lib/apt/lists/*
+
+# zlog is linked as libzlog.so in CMakeLists and is not consistently packaged on ARM images.
+ARG ZLOG_TAG=1.2.15
+RUN rm -rf /tmp/zlog && \
+    git clone --depth 1 --branch "${ZLOG_TAG}" https://github.com/HardySimpson/zlog.git /tmp/zlog && \
+    cd /tmp/zlog && \
+    make -j"$(nproc)" && \
+    make install && \
+    ldconfig
+
+# Neuron code uses json_realp (available in neugates/jansson fork, not upstream Ubuntu jansson).
+ARG JANSSON_REPO=https://github.com/neugates/jansson.git
+RUN rm -rf /tmp/jansson && \
+    git clone --depth 1 "${JANSSON_REPO}" /tmp/jansson && \
+    mkdir -p /tmp/jansson/build && cd /tmp/jansson/build && \
+    cmake -DJANSSON_BUILD_DOCS=OFF -DJANSSON_EXAMPLES=OFF .. && \
+    cmake --build . -j"$(nproc)" && \
+    cmake --install . && \
+    ldconfig
+
+# Ubuntu libjwt lacks jwt_valid_* API used in src/utils/neu_jwt.c; build the required version.
+ARG LIBJWT_TAG=v1.13.1
+RUN rm -rf /tmp/libjwt && \
+    git clone --depth 1 --branch "${LIBJWT_TAG}" https://github.com/benmcollins/libjwt.git /tmp/libjwt && \
+    mkdir -p /tmp/libjwt/build && cd /tmp/libjwt/build && \
+    cmake -DENABLE_PIC=ON -DBUILD_SHARED_LIBS=ON .. && \
+    cmake --build . -j"$(nproc)" && \
+    cmake --install . && \
+    ldconfig
+
+# Ubuntu's libnng-dev misses MQTT headers used by Neuron; build NanoSDK (nng with MQTT) instead.
+ARG NANOSDK_REPO=https://github.com/neugates/NanoSDK.git
+RUN rm -rf /tmp/NanoSDK && \
+    git clone --depth 1 "${NANOSDK_REPO}" /tmp/NanoSDK && \
+    mkdir -p /tmp/NanoSDK/build && cd /tmp/NanoSDK/build && \
+    cmake .. \
+      -DBUILD_SHARED_LIBS=ON \
+      -DNNG_TESTS=OFF \
+      -DNNG_ENABLE_MQTT=ON \
+      -DNNG_ENABLE_SQLITE=ON \
+      -DNNG_ENABLE_TLS=ON && \
+    cmake --build . -j"$(nproc)" && \
+    cmake --install . && \
+    ldconfig
 
 ARG O62541_TAG=v1.4.6
 RUN rm -rf /tmp/open62541 && \
     git clone --depth 1 --branch "${O62541_TAG}" https://github.com/open62541/open62541.git /tmp/open62541 && \
     mkdir -p /tmp/open62541/build && cd /tmp/open62541/build && \
     cmake .. \
-      -DCMAKE_C_COMPILER=aarch64-linux-gnu-gcc \
       -DCMAKE_BUILD_TYPE=Release \
       -DBUILD_SHARED_LIBS=ON \
       -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF && \
-    cmake --build . -j2 && \
+    cmake --build . -j"$(nproc)" && \
     cmake --install . && \
     ldconfig
 
 WORKDIR /workspace
 COPY . .
 
-# Keep LTO disabled and limit jobs for CM4-friendly binaries.
+# Native ARM64 build (no legacy aarch64 toolchain sysroot dependency).
 RUN rm -rf build-docker-cm4 && mkdir -p build-docker-cm4 && cd build-docker-cm4 && \
     cmake .. \
-      -DCMAKE_TOOLCHAIN_FILE=../cmake/aarch64-linux-gnu.cmake \
       -DCMAKE_BUILD_TYPE=Release \
       -DDISABLE_UT=ON \
+      -DDISABLE_ASAN=ON \
+      -DDISABLE_WERROR=ON \
+      -DDISABLE_DATALAYERS=ON \
       -DCMAKE_PREFIX_PATH=/usr/local \
       -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF && \
-    cmake --build . -j1
+    cmake --build . -j2
 
 # Required dashboard static bundle for / and /web routes.
 RUN cd /workspace/build-docker-cm4 && \
@@ -43,19 +90,30 @@ RUN cd /workspace/build-docker-cm4 && \
     unzip -q -o /tmp/neuron-dashboard.zip -d . && \
     rm /tmp/neuron-dashboard.zip
 
-FROM ${BUILD_IMAGE}
+FROM ubuntu:22.04
 
-ENV LD_LIBRARY_PATH=/usr/local/lib:/home/neuron/main/libs/aarch64-linux-gnu/lib
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update -qq && apt-get install -y -qq \
+    ca-certificates libssl3 libxml2 libsqlite3-0 \
+    libmbedcrypto7 libmbedtls14 libmbedx509-1 libprotobuf-c1 \
+    librdkafka1 && \
+    rm -rf /var/lib/apt/lists/*
+
+ENV LD_LIBRARY_PATH=/usr/local/lib
 ENV LD_PRELOAD=/usr/local/lib/libopen62541.so
 
 WORKDIR /opt/neuron
 COPY --from=builder /usr/local/lib/libopen62541.so* /usr/local/lib/
+COPY --from=builder /usr/local/lib/libzlog.so* /usr/local/lib/
+COPY --from=builder /usr/local/lib/libjansson.so* /usr/local/lib/
+COPY --from=builder /usr/local/lib/libjwt.so* /usr/local/lib/
+COPY --from=builder /usr/local/lib/libnng.so* /usr/local/lib/
 COPY --from=builder /workspace/build-docker-cm4/neuron ./
 COPY --from=builder /workspace/build-docker-cm4/libneuron-base.so ./
 COPY --from=builder /workspace/build-docker-cm4/plugins ./plugins/
 COPY --from=builder /workspace/build-docker-cm4/config ./config/
 COPY --from=builder /workspace/build-docker-cm4/dist ./dist/
-RUN mkdir -p logs persistence && touch logs/.gitkeep persistence/.gitkeep
+RUN ldconfig && mkdir -p logs persistence && touch logs/.gitkeep persistence/.gitkeep
 
 EXPOSE 7000
 CMD ["./neuron", "--log"]

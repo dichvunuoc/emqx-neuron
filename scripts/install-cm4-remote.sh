@@ -15,6 +15,7 @@
 #   SOURCE_BASE_URL   override: base URL for docker-compose.yml and .env.example (trailing / optional)
 #   IMAGE_TAR         if set, docker load from this path instead of docker pull
 #   USE_PUBLIC_IMAGE  if 1 and NEURON_IMAGE unset, use emqx/neuron:latest in .env
+#   CM4_SIM_SKIP_HOST_SETUP=1 — skip apt/docker/compose install (use inside deploy/cm4 Docker CM4 simulator)
 
 set -euo pipefail
 
@@ -25,6 +26,7 @@ SOURCE_BASE_URL="${SOURCE_BASE_URL:-https://raw.githubusercontent.com/${INSTALL_
 NEURON_IMAGE="${NEURON_IMAGE:-}"
 IMAGE_TAR="${IMAGE_TAR:-}"
 USE_PUBLIC_IMAGE="${USE_PUBLIC_IMAGE:-0}"
+CM4_SIM_SKIP_HOST_SETUP="${CM4_SIM_SKIP_HOST_SETUP:-0}"
 
 SUDO=""
 if [[ "${EUID}" -ne 0 ]]; then
@@ -100,6 +102,7 @@ Options:
 Environment:
   NEURON_IMAGE, SOURCE_BASE_URL, INSTALL_DIR, IMAGE_TAR, USE_PUBLIC_IMAGE=1
   INSTALL_SCRIPT_REPO, INSTALL_SCRIPT_BRANCH (defaults: dichvunuoc/emqx-neuron, main)
+  CM4_SIM_SKIP_HOST_SETUP=1 (Docker CM4 simulator — skip apt/docker/compose bootstrap)
 HELP
         exit 0
         ;;
@@ -247,10 +250,15 @@ main() {
   echo "== Neuron CM4 remote install (no repo clone) =="
   echo ">> Install dir: ${INSTALL_DIR}"
   echo ">> Compose/env source: ${SOURCE_BASE_URL}"
-  ensure_prereqs
-  ensure_docker
-  resolve_docker_cli
-  ensure_compose
+  if [[ "${CM4_SIM_SKIP_HOST_SETUP}" == "1" ]]; then
+    echo ">> CM4_SIM_SKIP_HOST_SETUP=1: skipping apt/docker/compose bootstrap (simulator mode)"
+    resolve_docker_cli
+  else
+    ensure_prereqs
+    ensure_docker
+    resolve_docker_cli
+    ensure_compose
+  fi
   ensure_install_dir
   download_deploy_files
   prepare_env

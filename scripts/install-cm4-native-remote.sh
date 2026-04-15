@@ -127,9 +127,32 @@ parse_args() {
 }
 
 ensure_prereqs() {
-  echo "==> Installing base prerequisites"
+  echo "==> Checking base prerequisites"
+
+  if ! command -v apt-get >/dev/null 2>&1; then
+    echo "ERROR: apt-get not found. This installer currently supports Debian/Ubuntu only." >&2
+    exit 1
+  fi
+
+  local -a missing_pkgs=()
+
+  command -v git >/dev/null 2>&1 || missing_pkgs+=("git")
+  command -v curl >/dev/null 2>&1 || missing_pkgs+=("curl")
+  command -v rg >/dev/null 2>&1 || missing_pkgs+=("ripgrep")
+
+  # Keep TLS CA bundle present for HTTPS git/curl operations.
+  if [[ ! -f /etc/ssl/certs/ca-certificates.crt ]]; then
+    missing_pkgs+=("ca-certificates")
+  fi
+
+  if [[ ${#missing_pkgs[@]} -eq 0 ]]; then
+    echo "==> All base prerequisites already installed"
+    return
+  fi
+
+  echo "==> Missing packages: ${missing_pkgs[*]}"
   ${SUDO} apt-get update -qq
-  ${SUDO} apt-get install -y -qq git curl ca-certificates
+  ${SUDO} apt-get install -y -qq "${missing_pkgs[@]}"
 }
 
 prepare_workspace() {

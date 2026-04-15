@@ -34,6 +34,19 @@ need_cmd() {
   command -v "$1" >/dev/null 2>&1
 }
 
+has_shared_lib() {
+  local pattern="$1"
+  local fallback_path="$2"
+
+  if need_cmd ldconfig; then
+    ldconfig -p | rg -q "${pattern}"
+    return $?
+  fi
+
+  # Some minimal systems do not ship ldconfig in PATH.
+  [[ -n "${fallback_path}" && -e "${fallback_path}" ]]
+}
+
 ensure_system_packages() {
   echo "==> Installing system packages"
   ${SUDO} apt-get update -qq
@@ -44,7 +57,7 @@ ensure_system_packages() {
 }
 
 build_zlog() {
-  if ldconfig -p | rg -q "libzlog\\.so"; then
+  if has_shared_lib "libzlog\\.so" "/usr/local/lib/libzlog.so"; then
     echo "==> libzlog already available"
     return
   fi
@@ -56,7 +69,7 @@ build_zlog() {
 }
 
 build_jansson() {
-  if ldconfig -p | rg -q "libjansson\\.so"; then
+  if has_shared_lib "libjansson\\.so" "/usr/local/lib/libjansson.so"; then
     echo "==> libjansson already available"
     return
   fi
@@ -71,7 +84,7 @@ build_jansson() {
 }
 
 build_libjwt() {
-  if ldconfig -p | rg -q "libjwt\\.so"; then
+  if has_shared_lib "libjwt\\.so" "/usr/local/lib/libjwt.so"; then
     echo "==> libjwt already available"
     return
   fi
@@ -104,7 +117,7 @@ build_nanosdk() {
 }
 
 build_open62541() {
-  if ldconfig -p | rg -q "libopen62541\\.so"; then
+  if has_shared_lib "libopen62541\\.so" "/usr/local/lib/libopen62541.so"; then
     echo "==> libopen62541 already available"
     return
   fi
@@ -152,7 +165,7 @@ post_check() {
   ls -lh "${ROOT_DIR}/${BUILD_DIR}/neuron" "${ROOT_DIR}/${BUILD_DIR}/libneuron-base.so"
 
   echo "==> OPC UA plugin check"
-  ls -lh "${ROOT_DIR}/${BUILD_DIR}/plugins/plugin-opcua.so"
+  ls -lh "${ROOT_DIR}/${BUILD_DIR}/plugins/libplugin-opcua.so"
 
   echo
   echo "Build finished."
@@ -174,7 +187,11 @@ main() {
     build_libjwt
     build_nanosdk
     build_open62541
-    ${SUDO} ldconfig
+    if need_cmd ldconfig; then
+      ${SUDO} ldconfig
+    else
+      echo "==> WARN: ldconfig not found, skipping cache refresh"
+    fi
   else
     echo "==> INSTALL_DEPS=0, skipping dependency installation"
   fi

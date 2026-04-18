@@ -69,8 +69,9 @@ build_zlog() {
 }
 
 build_jansson() {
-  if has_shared_lib "libjansson\\.so" "/usr/local/lib/libjansson.so"; then
-    echo "==> libjansson already available"
+  # Do not treat distro /lib/.../libjansson.so.4 as "ours"; libjwt needs CMake config from /usr/local.
+  if [[ -f /usr/local/lib/libjansson.so ]] || [[ -f /usr/local/lib64/libjansson.so ]]; then
+    echo "==> libjansson already available under /usr/local"
     return
   fi
   echo "==> Building neugates/jansson"
@@ -92,6 +93,7 @@ build_libjwt() {
   rm -rf /tmp/libjwt
   git clone --depth 1 --branch v1.13.1 https://github.com/benmcollins/libjwt.git /tmp/libjwt
   cmake -S /tmp/libjwt -B /tmp/libjwt/build \
+    -DCMAKE_PREFIX_PATH=/usr/local \
     -DENABLE_PIC=ON \
     -DBUILD_SHARED_LIBS=ON
   cmake --build /tmp/libjwt/build -j"${BUILD_JOBS}"

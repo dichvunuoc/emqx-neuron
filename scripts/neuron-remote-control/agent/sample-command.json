@@ -1,0 +1,16 @@
+{
+  "commandId": "cmd_01J0Q7W6VR8JGF3H2N8M7D9Q4E",
+  "gatewayId": "gw_quangninh_001",
+  "operation": "get_subscribe",
+  "neuronRequest": {
+    "method": "GET",
+    "path": "/api/v2/subscribe",
+    "query": {
+      "app": "mqtt"
+    }
+  },
+  "timeoutMs": 10000,
+  "idempotencyKey": "gw_quangninh_001:get_subscribe:2026-04-23T12",
+  "dryRun": false,
+  "createdAt": "2026-04-23T04:30:00Z"
+}

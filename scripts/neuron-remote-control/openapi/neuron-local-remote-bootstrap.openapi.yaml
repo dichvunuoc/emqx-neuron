@@ -1,0 +1,221 @@
+openapi: 3.0.3
+info:
+  title: Neuron Local Remote Bootstrap API
+  version: 0.1.0
+  description: >-
+    Local API used by Neuron web UI to configure reverse-channel connection to
+    control server, test connectivity, and activate/deactivate remote control.
+servers:
+  - url: http://localhost:7000
+paths:
+  /api/v2/remote/connection:
+    get:
+      summary: Get current remote connection profile
+      tags: [RemoteConnection]
+      responses:
+        '200':
+          description: Current profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectionProfile'
+    put:
+      summary: Save remote connection profile from UI
+      tags: [RemoteConnection]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectionProfileSaveRequest'
+      responses:
+        '200':
+          description: Saved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: integer
+                  updatedAt:
+                    type: string
+                    format: date-time
+        '400':
+          $ref: '#/components/responses/ValidationError'
+  /api/v2/remote/connection/test:
+    post:
+      summary: Test connectivity with control server without enabling remote control
+      tags: [RemoteConnection]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectionTestRequest'
+      responses:
+        '200':
+          description: Test result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectionTestResult'
+  /api/v2/remote/connection/connect:
+    post:
+      summary: Start reverse channel immediately using saved profile
+      tags: [RemoteConnection]
+      responses:
+        '200':
+          description: Connection start result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: integer
+                  status:
+                    type: string
+                    enum: [connecting, connected, failed]
+                  message:
+                    type: string
+  /api/v2/remote/connection/disconnect:
+    post:
+      summary: Stop reverse channel and mark remote mode disabled
+      tags: [RemoteConnection]
+      responses:
+        '200':
+          description: Disconnect result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: integer
+                  status:
+                    type: string
+                    enum: [disconnected]
+  /api/v2/remote/connection/status:
+    get:
+      summary: Get live remote connection state for UI badge
+      tags: [RemoteConnection]
+      responses:
+        '200':
+          description: Runtime status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectionRuntimeStatus'
+components:
+  responses:
+    ValidationError:
+      description: Invalid input payload
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+  schemas:
+    ConnectionProfile:
+      type: object
+      required: [enabled, gatewayId, controlServerUrl, authMode, heartbeatSec, reconnectSec, updatedAt]
+      properties:
+        enabled:
+          type: boolean
+        gatewayId:
+          type: string
+        controlServerUrl:
+          type: string
+          example: wss://control.example.com/reverse-channel
+        authMode:
+          type: string
+          enum: [mtls, mtls_hmac]
+        hmacEnabled:
+          type: boolean
+        heartbeatSec:
+          type: integer
+        reconnectSec:
+          type: integer
+        dryRunDefault:
+          type: boolean
+        updatedAt:
+          type: string
+          format: date-time
+    ConnectionProfileSaveRequest:
+      type: object
+      required: [gatewayId, controlServerUrl, authMode, heartbeatSec, reconnectSec]
+      properties:
+        gatewayId:
+          type: string
+        controlServerUrl:
+          type: string
+        authMode:
+          type: string
+          enum: [mtls, mtls_hmac]
+        hmacSecret:
+          type: string
+          writeOnly: true
+          description: Optional, saved encrypted in key store
+        heartbeatSec:
+          type: integer
+          minimum: 5
+          maximum: 120
+        reconnectSec:
+          type: integer
+          minimum: 1
+          maximum: 60
+        dryRunDefault:
+          type: boolean
+    ConnectionTestRequest:
+      type: object
+      required: [gatewayId, controlServerUrl, authMode]
+      properties:
+        gatewayId:
+          type: string
+        controlServerUrl:
+          type: string
+        authMode:
+          type: string
+          enum: [mtls, mtls_hmac]
+        hmacSecret:
+          type: string
+          writeOnly: true
+    ConnectionTestResult:
+      type: object
+      required: [ok, code, message, checkedAt]
+      properties:
+        ok:
+          type: boolean
+        code:
+          type: string
+          enum: [CONNECTED, TLS_FAILED, AUTH_FAILED, TIMEOUT, ROUTER_NO_ACK, INVALID_CONFIG]
+        message:
+          type: string
+        latencyMs:
+          type: integer
+        checkedAt:
+          type: string
+          format: date-time
+    ConnectionRuntimeStatus:
+      type: object
+      required: [state, lastChangeAt]
+      properties:
+        state:
+          type: string
+          enum: [disabled, connecting, connected, degraded, disconnected]
+        lastError:
+          type: string
+        lastHeartbeatAt:
+          type: string
+          format: date-time
+        lastChangeAt:
+          type: string
+          format: date-time
+    ErrorResponse:
+      type: object
+      required: [errorCode, message]
+      properties:
+        errorCode:
+          type: string
+        message:
+          type: string

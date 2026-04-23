@@ -1,0 +1,18 @@
+services:
+  mock-router:
+    build:
+      context: ../../..
+      dockerfile: scripts/neuron-remote-control/demo/Dockerfile.mock-router
+    ports:
+      - "9001:9001"
+
+  backend-stub:
+    build:
+      context: ../../..
+      dockerfile: scripts/neuron-remote-control/demo/Dockerfile.backend-stub
+    environment:
+      REMOTE_TLS_INSECURE: "1"
+    ports:
+      - "18080:18080"
+    depends_on:
+      - mock-router

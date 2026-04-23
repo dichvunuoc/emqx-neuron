@@ -1,0 +1,358 @@
+openapi: 3.0.3
+info:
+  title: Neuron Remote Control API
+  version: 0.1.0
+  description: >-
+    Control plane API to manage remote commands executed by GatewayAgent against
+    local Neuron API through reverse channel.
+servers:
+  - url: https://control.example.com
+paths:
+  /v1/gateways:
+    get:
+      summary: List registered gateways
+      tags: [Gateways]
+      parameters:
+        - in: query
+          name: siteCode
+          schema:
+            type: string
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [online, offline, degraded]
+      responses:
+        '200':
+          description: Gateway list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  gateways:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GatewaySummary'
+  /v1/gateways/{gatewayId}:
+    get:
+      summary: Get gateway details and latest health
+      tags: [Gateways]
+      parameters:
+        - $ref: '#/components/parameters/GatewayId'
+      responses:
+        '200':
+          description: Gateway detail
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  gateway:
+                    $ref: '#/components/schemas/GatewaySummary'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/gateways/{gatewayId}/commands:
+    post:
+      summary: Dispatch one command to a gateway
+      tags: [Commands]
+      parameters:
+        - $ref: '#/components/parameters/GatewayId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommandDispatchRequest'
+      responses:
+        '202':
+          description: Accepted and queued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandDispatchResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/commands/{commandId}:
+    get:
+      summary: Get current command status
+      tags: [Commands]
+      parameters:
+        - in: path
+          name: commandId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Command detail
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  command:
+                    $ref: '#/components/schemas/CommandStatus'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/commands/{commandId}/cancel:
+    post:
+      summary: Cancel a queued/running command
+      tags: [Commands]
+      parameters:
+        - in: path
+          name: commandId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Cancel result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  commandId:
+                    type: string
+                  status:
+                    type: string
+                    enum: [cancelled, not_cancellable]
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/gateways/{gatewayId}/snapshots/latest:
+    get:
+      summary: Get latest Neuron config snapshot
+      tags: [Snapshots]
+      parameters:
+        - $ref: '#/components/parameters/GatewayId'
+      responses:
+        '200':
+          description: Snapshot payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigSnapshot'
+        '404':
+          $ref: '#/components/responses/NotFound'
+components:
+  parameters:
+    GatewayId:
+      in: path
+      name: gatewayId
+      required: true
+      schema:
+        type: string
+        pattern: '^[a-zA-Z0-9._-]{3,128}$'
+  responses:
+    ValidationError:
+      description: Request validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Caller is not authorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+  schemas:
+    GatewaySummary:
+      type: object
+      required: [gatewayId, siteCode, status, lastSeenAt]
+      properties:
+        gatewayId:
+          type: string
+        siteCode:
+          type: string
+        displayName:
+          type: string
+        status:
+          type: string
+          enum: [online, offline, degraded]
+        lastSeenAt:
+          type: string
+          format: date-time
+        policyVersion:
+          type: string
+        agentVersion:
+          type: string
+    CommandDispatchRequest:
+      type: object
+      required: [operation, neuronRequest, timeoutMs, idempotencyKey]
+      properties:
+        operation:
+          type: string
+          enum:
+            - get_version
+            - get_nodes
+            - get_node_state
+            - get_node_setting
+            - get_groups
+            - get_tags
+            - get_subscribe
+            - get_subscribes
+            - read_tags
+            - create_subscribe
+            - update_subscribe
+            - delete_subscribe
+            - create_group
+            - update_group
+            - delete_group
+            - create_tags
+            - update_tags
+            - delete_tags
+            - node_ctl
+        neuronRequest:
+          $ref: '#/components/schemas/NeuronRequest'
+        timeoutMs:
+          type: integer
+          minimum: 1000
+          maximum: 120000
+        idempotencyKey:
+          type: string
+        dryRun:
+          type: boolean
+          default: false
+        priority:
+          type: string
+          enum: [low, normal, high]
+          default: normal
+    NeuronRequest:
+      type: object
+      required: [method, path]
+      properties:
+        method:
+          type: string
+          enum: [GET, POST, PUT, DELETE]
+        path:
+          type: string
+          pattern: '^/api/v2/[a-zA-Z0-9/_-]*$'
+        query:
+          type: object
+          additionalProperties:
+            oneOf:
+              - type: string
+              - type: number
+              - type: boolean
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+        body:
+          oneOf:
+            - type: object
+            - type: array
+            - type: string
+            - type: number
+            - type: boolean
+            - type: 'null'
+    CommandDispatchResponse:
+      type: object
+      required: [jobId, commandId, status, queuedAt]
+      properties:
+        jobId:
+          type: string
+          format: uuid
+        commandId:
+          type: string
+        status:
+          type: string
+          enum: [queued]
+        queuedAt:
+          type: string
+          format: date-time
+    CommandStatus:
+      type: object
+      required: [commandId, gatewayId, operation, status, attemptCount, createdAt]
+      properties:
+        commandId:
+          type: string
+        gatewayId:
+          type: string
+        operation:
+          type: string
+        status:
+          type: string
+          enum: [queued, running, success, failed, timeout, rejected, cancelled]
+        attemptCount:
+          type: integer
+        maxAttempts:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        startedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+        httpStatus:
+          type: integer
+        neuronErrorCode:
+          type: integer
+        errorMessage:
+          type: string
+        result:
+          oneOf:
+            - type: object
+            - type: array
+            - type: string
+            - type: number
+            - type: boolean
+            - type: 'null'
+    ConfigSnapshot:
+      type: object
+      required: [gatewayId, collectedAt, checksumSha256, nodes, groups, tags, subscribes]
+      properties:
+        gatewayId:
+          type: string
+        collectedAt:
+          type: string
+          format: date-time
+        neuronVersion:
+          type: string
+        checksumSha256:
+          type: string
+        nodes:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        groups:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        tags:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        subscribes:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+    ErrorResponse:
+      type: object
+      required: [errorCode, message]
+      properties:
+        errorCode:
+          type: string
+        message:
+          type: string
+        traceId:
+          type: string

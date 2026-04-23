@@ -1,0 +1,14 @@
+FROM python:3.11-slim
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends openssl && rm -rf /var/lib/apt/lists/*
+RUN pip install --no-cache-dir websockets
+
+RUN mkdir -p /app/certs && openssl req -x509 -nodes -newkey rsa:2048 \
+  -keyout /app/certs/server.key \
+  -out /app/certs/server.crt \
+  -days 365 \
+  -subj "/CN=mock-router"
+
+COPY scripts/neuron-remote-control/demo/mock_router.py /app/mock_router.py
+CMD ["python", "/app/mock_router.py"]

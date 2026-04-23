@@ -1,0 +1,18 @@
+FROM python:3.11-slim
+WORKDIR /app
+
+COPY scripts/neuron-remote-control/backend-stub/requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir -r /app/requirements.txt
+
+COPY scripts/neuron-remote-control/backend-stub /app/backend-stub
+COPY scripts/neuron-remote-control/contracts /app/contracts
+COPY scripts/neuron-remote-control/agent /app/agent
+
+ENV REMOTE_PROFILE_PATH=/app/backend-stub/data/connection-profile.json
+ENV REMOTE_CONNECTION_SCHEMA=/app/contracts/connection-profile.schema.json
+ENV REMOTE_AGENT_SCRIPT=/app/agent/gateway_agent.py
+ENV REMOTE_SCHEMA_PATH=/app/contracts/command-envelope.schema.json
+ENV REMOTE_NEURON_BASE_URL=http://127.0.0.1:7000
+ENV REMOTE_NEURON_TOKEN=demo-token
+
+CMD ["uvicorn", "app.main:app", "--app-dir", "/app/backend-stub", "--host", "0.0.0.0", "--port", "18080"]

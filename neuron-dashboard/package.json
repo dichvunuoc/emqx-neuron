@@ -1,0 +1,75 @@
+{
+  "name": "neuron-dashboard-src",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "vue-cli": "node ./scripts/run-vue-cli.js",
+    "serve": "yarn vue-cli serve",
+    "dev:pc": "yarn vue-cli serve VUE_APP_HOST=http://localhost:7003",
+    "dev:server": "yarn vue-cli serve VUE_APP_HOST=ws://iot-platform.cloud:6170",
+    "dev:test": "yarn vue-cli serve VUE_APP_HOST=http://124.70.166.104:7000",
+    "dev:en": "yarn vue-cli serve VUE_APP_HOST=http://124.70.166.104:7000 VUE_APP_LANG_EN=true",
+    "build": "yarn vue-cli build",
+    "build:en": "yarn vue-cli build VUE_APP_LANG_EN=true",
+    "lint": "yarn vue-cli lint"
+  },
+  "dependencies": {
+    "@emqx/emqx-ui": "^1.1.4",
+    "@types/js-cookie": "^3.0.3",
+    "@vueuse/core": "^4.8.1",
+    "axios": "^0.21.4",
+    "base64-js": "^1.5.1",
+    "blueimp-md5": "^2.19.0",
+    "core-js": "^3.6.5",
+    "dateformat": "^5.0.2",
+    "dayjs": "^1.10.4",
+    "echarts": "^5.2.2",
+    "element-plus": "1.0.2-beta.48",
+    "js-cookie": "^3.0.5",
+    "lodash": "^4.17.21",
+    "qiankun": "^2.7.0",
+    "vue": "3.2.19",
+    "vue-i18n": "9.1.4",
+    "vue-router": "^4.0.0-0",
+    "vuex": "^4.0.0-0",
+    "xe-utils": "^3.2.1",
+    "xlsx": "^0.17.5"
+  },
+  "devDependencies": {
+    "@types/blueimp-md5": "^2.18.0",
+    "@types/lodash": "^4.14.168",
+    "@typescript-eslint/eslint-plugin": "^4.18.0",
+    "@typescript-eslint/parser": "^4.18.0",
+    "@vue/cli-plugin-babel": "~4.5.0",
+    "@vue/cli-plugin-eslint": "~4.5.0",
+    "@vue/cli-plugin-router": "~4.5.0",
+    "@vue/cli-plugin-typescript": "~4.5.0",
+    "@vue/cli-plugin-vuex": "~4.5.0",
+    "@vue/cli-service": "~4.5.0",
+    "@vue/compiler-sfc": "^3.2.0",
+    "@vue/eslint-config-airbnb": "^5.3.0",
+    "@vue/eslint-config-prettier": "^6.0.0",
+    "@vue/eslint-config-typescript": "^7.0.0",
+    "eslint": "^6.7.2",
+    "eslint-plugin-prettier": "^3.3.1",
+    "eslint-plugin-vue": "^7.0.0",
+    "husky": "^6.0.0",
+    "lint-staged": "^9.5.0",
+    "prettier": "^2.2.1",
+    "sass": "^1.42.1",
+    "sass-loader": "^8.0.2",
+    "type-fest": "1.1.0",
+    "typescript": "~4.1.5",
+    "vue-loader": "16.8.1"
+  },
+  "gitHooks": {
+    "pre-commit": "./node_modules/.bin/lint-staged"
+  },
+  "lint-staged": {
+    "*.{js,jsx,vue,ts,tsx}": [
+      "./node_modules/.bin/vue-cli-service lint",
+      "git add"
+    ]
+  },
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+}

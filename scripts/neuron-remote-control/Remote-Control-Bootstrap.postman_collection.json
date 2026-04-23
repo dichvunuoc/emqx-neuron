@@ -1,0 +1,84 @@
+{
+  "info": {
+    "name": "Neuron Remote Control Bootstrap API",
+    "description": "Postman collection for local bootstrap endpoints `/api/v2/remote/*` implemented by backend-stub.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://127.0.0.1:18080" },
+    { "key": "gatewayId", "value": "gw_quangninh_001" },
+    { "key": "routerUrl", "value": "wss://mock-router:9001" },
+    { "key": "authMode", "value": "mtls_hmac" },
+    { "key": "hmacSecret", "value": "demo-secret" }
+  ],
+  "item": [
+    {
+      "name": "Get Connection Profile",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/v2/remote/connection"
+      }
+    },
+    {
+      "name": "Save Connection Profile",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"gatewayId\": \"{{gatewayId}}\",\n  \"controlServerUrl\": \"{{routerUrl}}\",\n  \"authMode\": \"{{authMode}}\",\n  \"hmacSecret\": \"{{hmacSecret}}\",\n  \"heartbeatSec\": 20,\n  \"reconnectSec\": 3,\n  \"dryRunDefault\": true\n}"
+        },
+        "url": "{{baseUrl}}/api/v2/remote/connection"
+      }
+    },
+    {
+      "name": "Test Connection",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"gatewayId\": \"{{gatewayId}}\",\n  \"controlServerUrl\": \"{{routerUrl}}\",\n  \"authMode\": \"{{authMode}}\",\n  \"hmacSecret\": \"{{hmacSecret}}\"\n}"
+        },
+        "url": "{{baseUrl}}/api/v2/remote/connection/test"
+      }
+    },
+    {
+      "name": "Connect",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": "{{baseUrl}}/api/v2/remote/connection/connect"
+      }
+    },
+    {
+      "name": "Get Runtime Status",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/v2/remote/connection/status"
+      }
+    },
+    {
+      "name": "Disconnect",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": "{{baseUrl}}/api/v2/remote/connection/disconnect"
+      }
+    },
+    {
+      "name": "Get Runtime Status (After Disconnect)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/v2/remote/connection/status"
+      }
+    }
+  ]
+}

@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/neuron/remote-control/command-envelope.schema.json",
+  "title": "NeuronRemoteCommandEnvelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "commandId",
+    "gatewayId",
+    "operation",
+    "neuronRequest",
+    "timeoutMs",
+    "createdAt",
+    "idempotencyKey"
+  ],
+  "properties": {
+    "commandId": {
+      "type": "string",
+      "description": "Globally unique command id (UUIDv4 recommended)",
+      "pattern": "^[a-zA-Z0-9-_:]{16,128}$"
+    },
+    "gatewayId": {
+      "type": "string",
+      "description": "Stable ID registered for one gateway",
+      "pattern": "^[a-zA-Z0-9._-]{3,128}$"
+    },
+    "operation": {
+      "type": "string",
+      "description": "Named operation mapped to allowlisted Neuron API",
+      "enum": [
+        "get_version",
+        "get_nodes",
+        "get_node_state",
+        "get_node_setting",
+        "get_groups",
+        "get_tags",
+        "get_subscribe",
+        "get_subscribes",
+        "read_tags",
+        "create_subscribe",
+        "update_subscribe",
+        "delete_subscribe",
+        "create_group",
+        "update_group",
+        "delete_group",
+        "create_tags",
+        "update_tags",
+        "delete_tags",
+        "node_ctl"
+      ]
+    },
+    "neuronRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "path"],
+      "properties": {
+        "method": {
+          "type": "string",
+          "enum": ["GET", "POST", "PUT", "DELETE"]
+        },
+        "path": {
+          "type": "string",
+          "pattern": "^/api/v2/[a-zA-Z0-9/_-]*$"
+        },
+        "query": {
+          "type": "object",
+          "description": "Raw query params before gateway-side allowlist validation",
+          "additionalProperties": {
+            "type": ["string", "number", "boolean"]
+          }
+        },
+        "headers": {
+          "type": "object",
+          "description": "Optional additional headers; Authorization must not be provided by caller",
+          "additionalProperties": {
+            "type": "string",
+            "maxLength": 1024
+          }
+        },
+        "body": {
+          "description": "JSON body expected by Neuron API endpoint",
+          "type": ["object", "array", "string", "number", "boolean", "null"]
+        }
+      }
+    },
+    "timeoutMs": {
+      "type": "integer",
+      "minimum": 1000,
+      "maximum": 120000
+    },
+    "priority": {
+      "type": "string",
+      "enum": ["low", "normal", "high"],
+      "default": "normal"
+    },
+    "idempotencyKey": {
+      "type": "string",
+      "description": "Key used by orchestrator and gateway for de-duplication",
+      "pattern": "^[a-zA-Z0-9._:-]{8,256}$"
+    },
+    "requestedBy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "subject": { "type": "string", "maxLength": 256 },
+        "role": { "type": "string", "maxLength": 128 },
+        "sourceIp": { "type": "string", "maxLength": 64 }
+      }
+    },
+    "dryRun": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, gateway validates command but does not apply a write call"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expiresAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

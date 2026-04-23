@@ -1,0 +1,159 @@
+{
+  "info": {
+    "name": "EMQX Neuron API v2",
+    "description": "Collection gọi thử REST Neuron `/api/v2`.\n\n1. Sửa biến `baseUrl` (ví dụ `http://localhost:7000` hoặc `http://localhost:7001` — trùng host/port với Neuron của bạn).\n2. Sửa `neuron_user` / `neuron_pass` nếu khác mặc định.\n3. Chạy **Login** trước; script sẽ ghi `token` vào biến collection.\n4. Với **Get Tag**, điền `southNode` và `southGroup` đúng node/group trên gateway.\n\nTham chiếu: `docs/api/english/http.md` trong repo emqx-neuron.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:7000" },
+    { "key": "neuron_user", "value": "admin" },
+    { "key": "neuron_pass", "value": "0000" },
+    { "key": "token", "value": "" },
+    { "key": "southNode", "value": "modbus-tcp-node" },
+    { "key": "southGroup", "value": "group-1" },
+    { "key": "northApp", "value": "mqtt" }
+  ],
+  "item": [
+    {
+      "name": "Public",
+      "item": [
+        {
+          "name": "Ping",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/v2/ping"
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "try {",
+                  "  const j = pm.response.json();",
+                  "  if (j && j.token) {",
+                  "    pm.collectionVariables.set('token', j.token);",
+                  "    console.log('token saved to collection variable');",
+                  "  } else {",
+                  "    console.log('no token in response');",
+                  "  }",
+                  "} catch (e) { console.log(e); }"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{neuron_user}}\",\n  \"pass\": \"{{neuron_pass}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v2/login"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Authenticated (Bearer)",
+      "auth": {
+        "type": "bearer",
+        "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+      },
+      "item": [
+        {
+          "name": "Get Version",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v2/version"
+          }
+        },
+        {
+          "name": "Get Nodes (south drivers type=1)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v2/node?type=1"
+          }
+        },
+        {
+          "name": "Get Nodes (north apps type=2)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v2/node?type=2"
+          }
+        },
+        {
+          "name": "Get Node State",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v2/node/state?node={{southNode}}"
+          }
+        },
+        {
+          "name": "Get Node Setting",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v2/node/setting?node={{southNode}}"
+          }
+        },
+        {
+          "name": "Get Groups (all or filter by node)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v2/group?node={{southNode}}"
+          }
+        },
+        {
+          "name": "Get Tags (node + group required)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v2/tags?node={{southNode}}&group={{southGroup}}"
+          }
+        },
+        {
+          "name": "Get Subscribe (MQTT upload topics, app required)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v2/subscribe?app={{northApp}}"
+          }
+        },
+        {
+          "name": "Get Subscribes status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v2/subscribes?app={{northApp}}"
+          }
+        },
+        {
+          "name": "Read Tag (one-shot test read)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"node\": \"{{southNode}}\",\n  \"group\": \"{{southGroup}}\",\n  \"tags\": [\"tag1\"]\n}"
+            },
+            "url": "{{baseUrl}}/api/v2/read"
+          }
+        }
+      ]
+    }
+  ]
+}

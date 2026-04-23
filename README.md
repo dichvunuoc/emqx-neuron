@@ -114,6 +114,7 @@ See the quick start for a hands-on walkthrough.
 
 - Quick start: [Modbus TCP collection and MQTT publishing](./docs/quick_start/quick_start.md)
 - APIs: [HTTP](docs/api/english/http.md), [MQTT](docs/api/english/mqtt.md)
+- Bulk north MQTT subscribe + optional tags from Excel: [scripts/neuron-excel-import/](scripts/neuron-excel-import/) (`neuron_excel_import.py`, template `.xlsx`, `OPERATOR_NOTES.txt`)
 - CM4 Docker deployment: [deploy/cm4/README.md](./deploy/cm4/README.md)
 - CM4 one-command setup script: [scripts/cm4-one-command-setup.sh](./scripts/cm4-one-command-setup.sh)
 - CM4 remote install (`curl | bash`, no clone): [scripts/install-cm4-remote.sh](./scripts/install-cm4-remote.sh)

@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/neuron/remote-control/response-envelope.schema.json",
+  "title": "NeuronRemoteResponseEnvelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "commandId",
+    "gatewayId",
+    "status",
+    "attempt",
+    "startedAt",
+    "completedAt",
+    "durationMs"
+  ],
+  "properties": {
+    "commandId": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9-_:]{16,128}$"
+    },
+    "gatewayId": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9._-]{3,128}$"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "success",
+        "failed",
+        "rejected",
+        "timeout",
+        "cancelled"
+      ]
+    },
+    "attempt": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10
+    },
+    "httpStatus": {
+      "type": "integer",
+      "minimum": 100,
+      "maximum": 599
+    },
+    "neuronErrorCode": {
+      "type": "integer",
+      "description": "Error code returned by Neuron response payload when available"
+    },
+    "errorMessage": {
+      "type": "string",
+      "maxLength": 4096
+    },
+    "result": {
+      "description": "Raw body returned by Neuron API",
+      "type": ["object", "array", "string", "number", "boolean", "null"]
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "policyVersion": { "type": "string", "maxLength": 64 },
+        "allowlistMatched": { "type": "boolean" },
+        "signatureVerified": { "type": "boolean" }
+      }
+    },
+    "startedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "completedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "durationMs": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 300000
+    },
+    "traceId": {
+      "type": "string",
+      "maxLength": 128
+    }
+  }
+}

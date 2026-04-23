@@ -1,0 +1,47 @@
+Neuron Excel import — operator notes
+=====================================
+
+Topic layout (Mapping sheet, unless topic_override is set):
+  factory / {site} / {area?} / {line?} / {leaf} / {data_type}
+  - site defaults to quang-ninh when empty
+  - data_type defaults to telemetry when empty
+  - leaf = device_id (slugged) when device_id is non-empty; otherwise group name (slugged)
+  - area and line are omitted from the path when their cells are empty
+
+Payload (Custom format)
+-----------------------
+Paste the JSON from examples/mqtt_custom_upload_format.json into the north MQTT
+node "Schema" / custom upload format field in Dashboard, or set the same via
+node settings API. Adjust keys to match your consumer.
+
+QoS and retain
+--------------
+The MQTT north plugin applies one QoS level to telemetry publishes for the whole
+node. Per-topic QoS (e.g. control=1, telemetry=0) or MQTT retain for status
+typically requires a second north app, EMQX rules, or another bridge.
+
+JWT / login (get token for API scripts)
+---------------------------------------
+POST /api/v2/login with JSON body {"name":"...","pass":"..."}; the response contains
+"token" (Bearer JWT for Authorization on other endpoints).
+
+Minimal curl (matches Neuron API; browser Cookie / Referer headers from the UI are
+not required):
+
+  curl -sS 'http://localhost:7001/api/v2/login' \
+    -H 'Accept: application/json' \
+    -H 'Content-Type: application/json' \
+    --data-raw '{"name":"admin","pass":"0000"}'
+
+Optional: pipe through jq to print only the token:
+
+  ... | jq -r .token
+
+neuron_auto_subscribe.py: pass --token "$(...)" or use --user admin --password ...
+neuron_excel_import.py: --token is required for import.
+
+References
+------------
+Broker / backend integration (topics, payload, QoS): BROKER_INTEGRATION.md
+API: docs/api/english/http.md (POST /api/v2/login, /api/v2/subscribes, /api/v2/gtags)
+MQTT payload variables: docs/api/english/mqtt.md (Custom format)

@@ -4,7 +4,7 @@
       <emqx-card shadow="never">
         <img class="img-login" src="~@/assets/images/img-login.png" />
         <div class="login-main">
-          <img class="img-logo" src="~@/assets/images/logo.png" alt="neuron-logo" width="141" />
+          <img class="img-logo" src="~@/assets/images/logo.png" alt="systems-edgegateway-logo" width="141" />
           <emqx-form ref="formCom" :model="form" :rules="rules" @keyup.enter="login">
             <emqx-form-item prop="userName">
               <emqx-input v-model.trim="form.userName" type="text" :placeholder="$t('common.username')" />

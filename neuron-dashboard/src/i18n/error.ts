@@ -313,7 +313,9 @@ export default {
     请<a target="_blank" rel="noopener norefferrer" href="https://www.emqx.com/zh/apply-licenses/neuron">更新 License</a>
     或联系销售人员更新 License。`,
     en: `Your License has expired,
-    vi: `Your License has expired,
+    please <a target="_blank" rel="noopener norefferrer" href="https://www.emqx.com/zh/apply-licenses/neuron">update the License</a>
+    or contact the sales staff to update the License.`,
+    vi: `License da het han,
     please <a target="_blank" rel="noopener norefferrer" href="https://www.emqx.com/zh/apply-licenses/neuron">update the License</a>
     or contact the sales staff to update the License.`,
   },
@@ -337,7 +339,9 @@ export default {
     请<a target="_blank" rel="noopener norefferrer" href="https://www.emqx.com/zh/apply-licenses/neuron">更新 License</a>
     或删除部分驱动节点。`,
     en: `The count of nodes exceeds the license limit, and Neuron cannot be used normally.
-    vi: `The count of nodes exceeds the license limit, and Neuron cannot be used normally.
+    Please <a target="_blank" rel="noopener norefferrer" href="https://www.emqx.com/zh/apply-licenses/neuron">update the license</a>
+    or delete some driver nodes.`,
+    vi: `So node vuot qua gioi han License, Neuron khong the hoat dong binh thuong.
     Please <a target="_blank" rel="noopener norefferrer" href="https://www.emqx.com/zh/apply-licenses/neuron">update the license</a>
     or delete some driver nodes.`,
   },
@@ -361,7 +365,9 @@ export default {
     请<a target="_blank" rel="noopener norefferrer" href="https://www.emqx.com/zh/apply-licenses/neuron">更新 License</a>
     或删除部分点位。`,
     en: `The count of data tags exceeds the license limit, and Neuron cannot be used normally.
-    vi: `The count of data tags exceeds the license limit, and Neuron cannot be used normally.
+    Please <a target="_blank" rel="noopener norefferrer" href="https://www.emqx.com/zh/apply-licenses/neuron">update the license</a>
+    or delete some data tags.`,
+    vi: `So luong tag du lieu vuot qua gioi han License, Neuron khong the hoat dong binh thuong.
     Please <a target="_blank" rel="noopener norefferrer" href="https://www.emqx.com/zh/apply-licenses/neuron">update the license</a>
     or delete some data tags.`,
   },
@@ -390,7 +396,9 @@ export default {
     请<a target="_blank" rel="noopener norefferrer" href="https://www.emqx.com/zh/apply-licenses/neuron">更新 License</a>
     或联系销售人员更新 License。`,
     en: `The license does not match the hardware, and Neuron cannot be used normally.
-    vi: `The license does not match the hardware, and Neuron cannot be used normally.
+    Please <a target="_blank" rel="noopener norefferrer" href="https://www.emqx.com/zh/apply-licenses/neuron">update the license</a>
+    or contact the sales staff to update the License.`,
+    vi: `License khong khop voi phan cung, Neuron khong the hoat dong binh thuong.
     Please <a target="_blank" rel="noopener norefferrer" href="https://www.emqx.com/zh/apply-licenses/neuron">update the license</a>
     or contact the sales staff to update the License.`,
   },

@@ -10,7 +10,7 @@
 
     <emqx-form label-position="left" label-width="220px" class="remote-form">
       <emqx-form-item :label="$t('config.runtimeStatus')">
-        <emqx-tag :type="statusTagType">{{ status.state || 'unknown' }}</emqx-tag>
+        <emqx-tag :type="statusTagType">{{ $t(`config.status_${status.state || 'unknown'}`) }}</emqx-tag>
         <span class="status-meta" v-if="status.lastHeartbeatAt">
           {{ $t('config.lastHeartbeatAt') }}: {{ status.lastHeartbeatAt }}
         </span>
@@ -26,8 +26,8 @@
 
       <emqx-form-item :label="$t('config.authMode')">
         <emqx-select v-model="form.authMode" style="width: 100%">
-          <emqx-option label="mTLS" value="mtls" />
-          <emqx-option label="mTLS + HMAC" value="mtls_hmac" />
+          <emqx-option :label="$t('config.mtls')" value="mtls" />
+          <emqx-option :label="$t('config.mtlsHmac')" value="mtls_hmac" />
         </emqx-select>
       </emqx-form-item>
 
@@ -56,11 +56,11 @@
     </emqx-form>
 
     <emqx-descriptions v-if="testResult.checkedAt" :title="$t('config.lastTestResult')" :column="1" border>
-      <emqx-descriptions-item label="ok">{{ testResult.ok }}</emqx-descriptions-item>
-      <emqx-descriptions-item label="code">{{ testResult.code }}</emqx-descriptions-item>
+      <emqx-descriptions-item :label="$t('common.status')">{{ testResult.ok }}</emqx-descriptions-item>
+      <emqx-descriptions-item :label="$t('common.code')">{{ testResult.code }}</emqx-descriptions-item>
       <emqx-descriptions-item :label="$t('common.message')">{{ testResult.message }}</emqx-descriptions-item>
-      <emqx-descriptions-item label="latencyMs">{{ testResult.latencyMs }}</emqx-descriptions-item>
-      <emqx-descriptions-item label="checkedAt">{{ testResult.checkedAt }}</emqx-descriptions-item>
+      <emqx-descriptions-item :label="$t('config.latencyMs')">{{ testResult.latencyMs }}</emqx-descriptions-item>
+      <emqx-descriptions-item :label="$t('config.checkedAt')">{{ testResult.checkedAt }}</emqx-descriptions-item>
     </emqx-descriptions>
   </emqx-card>
 </template>
@@ -68,6 +68,7 @@
 <script lang="ts" setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { EmqxMessage } from '@emqx/emqx-ui'
+import { useI18n } from 'vue-i18n'
 import ViewHeaderBar from '@/components/ViewHeaderBar.vue'
 import {
   connectRemoteConnection,
@@ -80,6 +81,7 @@ import {
 import type { ConnectionProfileSaveRequest, ConnectionRuntimeStatus, ConnectionTestResult } from '@/api/remoteControl'
 
 const POLL_INTERVAL_MS = 5000
+const { t } = useI18n()
 
 const loading = ref(false)
 const lastError = ref('')
@@ -127,13 +129,13 @@ const statusTagType = computed(() => {
 
 const validateForm = () => {
   if (!form.gatewayId || form.gatewayId.length < 3) {
-    throw new Error('gatewayId must be at least 3 chars')
+    throw new Error(t('config.gatewayIdLengthError'))
   }
   if (!form.controlServerUrl || !form.controlServerUrl.startsWith('wss://')) {
-    throw new Error('controlServerUrl must start with wss://')
+    throw new Error(t('config.controlServerUrlError'))
   }
   if (form.authMode === 'mtls_hmac' && !form.hmacSecret) {
-    throw new Error('hmacSecret is required for mtls_hmac')
+    throw new Error(t('config.hmacRequiredError'))
   }
 }
 
@@ -173,7 +175,7 @@ const onSave = async () => {
   await withLoading(async () => {
     validateForm()
     await saveRemoteConnection(form)
-    EmqxMessage.success('Saved')
+    EmqxMessage.success(t('common.updateSuccess'))
   })
 }
 
@@ -187,7 +189,7 @@ const onTest = async () => {
     testResult.latencyMs = result.latencyMs || 0
     testResult.checkedAt = result.checkedAt
     if (result.ok) {
-      EmqxMessage.success('Connection OK')
+      EmqxMessage.success(t('config.connectionOk'))
     } else {
       EmqxMessage.warning(result.message)
     }
@@ -197,7 +199,7 @@ const onTest = async () => {
 const onConnect = async () => {
   await withLoading(async () => {
     const result = await connectRemoteConnection()
-    EmqxMessage.success(result?.message || 'Connected')
+    EmqxMessage.success(result?.message || t('config.connected'))
     await syncStatus()
   })
 }
@@ -205,7 +207,7 @@ const onConnect = async () => {
 const onDisconnect = async () => {
   await withLoading(async () => {
     const result = await disconnectRemoteConnection()
-    EmqxMessage.success(result?.message || 'Disconnected')
+    EmqxMessage.success(result?.message || t('config.disconnected'))
     await syncStatus()
   })
 }

@@ -2,7 +2,7 @@
   <emqx-card class="overview" v-emqx-loading="isLoading">
     <div class="block">
       <div class="block-hd">
-        <h3 class="card-title">Neuron Gateway</h3>
+        <h3 class="card-title">{{ $t('common.brandName') }}</h3>
         <!-- <span class="sub-title">{{ $t('config.runningTime') }}: 12</span> -->
       </div>
       <!-- <emqx-row class="charts-container" :gutter="32">

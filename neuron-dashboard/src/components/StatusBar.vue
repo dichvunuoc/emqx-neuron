@@ -4,7 +4,7 @@
     <template v-if="status">
       <div :class="[status.comm === 'UP' ? 'green' : 'red', 'status-item']">
         <i class="iconfont iconcomm-down1"></i>
-        COMM {{ status.comm || '' }}
+        {{ $t('common.comm') }} {{ status.comm || '' }}
       </div>
       <div class="mach status-item">
         <i class="iconfont iconmanu"></i>
@@ -16,9 +16,9 @@
       </div>
       <div :class="[status.mqcn === 'MQDISCONNECT' ? 'red' : 'green', 'status-item']">
         <i class="iconfont iconmqdisconnect"></i>
-        {{ status.mqcn || 'MQDISCONNECT' }}
+        {{ status.mqcn || $t('common.mqDisconnected') }}
       </div>
-      <div :class="[galm === 'NO ALARM' ? 'green' : 'red', 'status-item']">
+      <div :class="[galm === $t('common.noAlarm') ? 'green' : 'red', 'status-item']">
         <i class="iconfont iconalarm"></i>
         {{ galm }}
       </div>
@@ -30,6 +30,7 @@
 import { computed, defineComponent } from 'vue'
 import { ElDivider } from 'element-plus'
 import { useStore } from 'vuex'
+import { useI18n } from 'vue-i18n'
 
 export default defineComponent({
   name: 'StatusBar',
@@ -38,6 +39,7 @@ export default defineComponent({
   },
   setup() {
     const store = useStore()
+    const { t } = useI18n()
     const status = computed(() => {
       return store.state.status
     })
@@ -45,16 +47,16 @@ export default defineComponent({
       let res = ''
       switch (status.value.galm) {
         case 'NON-EXIST':
-          res = 'NO ALARM'
+          res = 'common.noAlarm'
           break
         case 'UNACKNOWLEDGE':
-          res = 'UNACK ALARM'
+          res = 'common.unackAlarm'
           break
         case 'EXIST':
-          res = 'ALARM'
+          res = 'common.alarm'
           break
       }
-      return res
+      return res ? t(res) : ''
     })
     return {
       status,

@@ -33,8 +33,8 @@
       />
       <!-- Boolean -->
       <emqx-radio-group v-else-if="paramInfo.type === TypeOfPluginParam.Boolean" v-model="inputValue">
-        <emqx-radio :label="true">True</emqx-radio>
-        <emqx-radio :label="false">False</emqx-radio>
+        <emqx-radio :label="true">{{ $t('common.true') }}</emqx-radio>
+        <emqx-radio :label="false">{{ $t('common.false') }}</emqx-radio>
       </emqx-radio-group>
       <!-- File -->
       <div class="file-param" v-else-if="paramInfo.type === TypeOfPluginParam.File">
@@ -45,7 +45,7 @@
           {{ t('config.clearUploadedFile') }}
         </emqx-button>
         <div class="file-content-preview" v-if="inputValue">
-          <label>Content-MD5:</label>
+          <label>{{ $t('common.contentMd5') }}:</label>
           <span>{{ fileContentPreview(inputValue) }}</span>
         </div>
       </div>

@@ -49,4 +49,4 @@ export const APP_DO_NOT_NEED_SHOW = [DASHBOARD_APP_NAME, 'default-persist-adapte
 
 export const PLUGIN_TYPES = 'default-dashboard-adapter'
 
-export const DEFAULT_LANG = 'en'
+export const DEFAULT_LANG = 'vi'

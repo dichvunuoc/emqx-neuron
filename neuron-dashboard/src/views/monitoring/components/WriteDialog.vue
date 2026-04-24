@@ -25,8 +25,8 @@
           @blur="validate"
         />
         <emqx-radio-group v-else v-model="inputValue">
-          <emqx-radio :label="true">True</emqx-radio>
-          <emqx-radio :label="false">False</emqx-radio>
+          <emqx-radio :label="true">{{ $t('common.true') }}</emqx-radio>
+          <emqx-radio :label="false">{{ $t('common.false') }}</emqx-radio>
         </emqx-radio-group>
       </emqx-form-item>
     </emqx-form>

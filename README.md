@@ -123,6 +123,13 @@ See the quick start for a hands-on walkthrough.
 - CM4 safe upgrade (preserve existing runtime data/config): [scripts/upgrade-cm4-native-safe-remote.sh](./scripts/upgrade-cm4-native-safe-remote.sh)
   - Example:  
     `curl -fsSL https://raw.githubusercontent.com/dichvunuoc/emqx-neuron/main/scripts/upgrade-cm4-native-safe-remote.sh | bash -s -- --repo https://github.com/dichvunuoc/emqx-neuron.git --branch main`
+  - Note:
+    - Script auto-fallbacks to a new source folder if current repo is dirty (avoid `git pull` overwrite errors).
+    - Script auto-detects old installer variants that do not support `--dashboard-mode`.
+    - Script also sets up backend-stub + nginx bridge by default so `/api/v2/remote/*` works on the same UI URL.
+  - After install/upgrade:
+    - UI login: `http://<client-ip>:7002/web/#/login`
+    - Remote API on same origin: `http://<client-ip>:7002/api/v2/remote/connection`
 - Remote Control SOP (Dashboard + backend stub + remote server): [scripts/neuron-remote-control/docs/remote-control-sop.md](./scripts/neuron-remote-control/docs/remote-control-sop.md)
 
 ## Dashboard

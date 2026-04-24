@@ -3,6 +3,7 @@ import { useStore } from 'vuex'
 import locale from 'element-plus/lib/locale'
 import zhLang from 'element-plus/lib/locale/lang/zh-cn'
 import enLang from 'element-plus/lib/locale/lang/en'
+import viLang from 'element-plus/lib/locale/lang/vi'
 import store from '@/store'
 import i18n from '@/i18n/index'
 
@@ -10,6 +11,8 @@ export const setLang = () => {
   const initLang = () => {
     if (store.state.lang === 'zh') {
       locale.use(zhLang)
+    } else if (store.state.lang === 'vi') {
+      locale.use(viLang)
     } else {
       locale.use(enLang)
     }
@@ -35,6 +38,10 @@ export default () => {
     {
       label: 'English',
       value: 'en',
+    },
+    {
+      label: 'Tiếng Việt',
+      value: 'vi',
     },
   ]
 

@@ -1,7 +1,7 @@
 <template>
   <emqx-header class="header">
     <template #title>
-      <img src="../assets/images/logo.png" alt="neuron-logo" width="141" />
+      <img src="../assets/images/logo.png" alt="systems-edgegateway-logo" width="141" />
     </template>
 
     <template v-slot:right>
@@ -15,7 +15,7 @@
             <emqx-dropdown-menu class="header-menu">
               <emqx-dropdown-item @click="goLicense">
                 <i class="iconfont iconLicense"></i>
-                <span>License</span>
+                <span>{{ $t('admin.license') }}</span>
               </emqx-dropdown-item>
               <emqx-dropdown-item @click="goAbout">
                 <i class="iconfont iconabout"></i>

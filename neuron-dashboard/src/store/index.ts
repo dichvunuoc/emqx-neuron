@@ -22,7 +22,7 @@ interface State {
   axiosPromiseCancel: Array<any>
 }
 
-const checkLanguage = (lang: string) => (['en', 'zh'].includes(lang) ? lang : '')
+const checkLanguage = (lang: string) => (['en', 'zh', 'vi'].includes(lang) ? lang : '')
 const getDefaultLanguage = () => {
   const localStorageLanguage = checkLanguage(localStorage.getItem('language') || '')
   return localStorageLanguage || DEFAULT_LANG

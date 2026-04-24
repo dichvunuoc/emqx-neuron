@@ -9,6 +9,9 @@ This package contains implementation-ready design artifacts for managing Neuron 
 - `contracts/operation-allowlist.md`: operation-to-endpoint mapping and policy.
 - `contracts/connection-profile.schema.json`: schema for local Neuron UI connection profile.
 - `openapi/control-api.openapi.yaml`: ControlAPI contract for gateway, command, snapshot endpoints.
+- `openapi/edge-gateway-remote-minimal.openapi.yaml`: minimal REMOTE contract (create edgeGatewayId -> dispatch command by edgeGatewayId -> get command result).
+- `openapi/edge-gateway-remote-minimal.examples.md`: copy-paste request/response examples for create gateway + get_nodes/get_groups/get_tags flow.
+- `openapi/edge-gateway-remote-minimal.http`: REST Client requests for IDE one-click testing.
 - `openapi/neuron-local-remote-bootstrap.openapi.yaml`: local Neuron API contract for Save/Test/Connect/Status UI flow.
 - `agent/gateway_agent.py`: command execution skeleton (schema validation + allowlist + local Neuron call).
 - `agent/sign_command.py`: helper to generate HMAC signatures for command envelopes.
@@ -17,6 +20,7 @@ This package contains implementation-ready design artifacts for managing Neuron 
 - `agent/sample-command.json`: example command envelope for local run.
 - `agent/README.md`: setup and run instructions for the agent skeleton.
 - `backend-stub/`: FastAPI stub implementing local `/api/v2/remote/*` endpoints for UI onboarding.
+- `remote-server/`: complete REMOTE skeleton (create edgeGatewayId + dispatch command + command result + reverse-channel ws).
 - `demo/`: docker-compose demo stack (backend-stub + TLS mock router) for end-to-end API testing.
 - `Remote-Control-Bootstrap.postman_collection.json`: Postman collection for testing `/api/v2/remote/*` flow.
 - `ui-integration-contract.md`: frontend integration contract (form/state/buttons/polling/errors) for Neuron UI.

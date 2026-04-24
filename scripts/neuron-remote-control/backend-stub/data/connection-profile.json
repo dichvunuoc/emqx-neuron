@@ -1,0 +1,12 @@
+{
+  "enabled": false,
+  "gatewayId": "gw_demo_001",
+  "controlServerUrl": "wss://remote-server:9010/reverse-channel",
+  "authMode": "mtls",
+  "hmacEnabled": false,
+  "heartbeatSec": 10,
+  "reconnectSec": 3,
+  "dryRunDefault": true,
+  "description": "",
+  "updatedAt": "2026-04-23T16:58:30.233504Z"
+}

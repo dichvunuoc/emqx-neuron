@@ -22,6 +22,7 @@
 #   BUILD_JOBS=2
 #   DISABLE_DATALAYERS=1
 #   SKIP_DASHBOARD=0
+#   DASHBOARD_MODE=auto
 #
 set -euo pipefail
 
@@ -32,6 +33,7 @@ BUILD_TYPE="${BUILD_TYPE:-Release}"
 BUILD_JOBS="${BUILD_JOBS:-2}"
 DISABLE_DATALAYERS="${DISABLE_DATALAYERS:-1}"
 SKIP_DASHBOARD="${SKIP_DASHBOARD:-0}"
+DASHBOARD_MODE="${DASHBOARD_MODE:-auto}"
 
 REPO_URL="${REPO_URL:-}"
 REPO_BRANCH="${REPO_BRANCH:-main}"
@@ -42,6 +44,8 @@ SUDO=""
 if [[ "${EUID}" -ne 0 ]]; then
   SUDO="sudo"
 fi
+EFFECTIVE_USER="${SUDO_USER:-${USER:-$(id -un)}}"
+EFFECTIVE_GROUP="$(id -gn "${EFFECTIVE_USER}")"
 
 usage() {
   cat <<'HELP'
@@ -60,6 +64,7 @@ Options:
   --build-jobs N        Parallel build jobs (default: 2)
   --disable-datalayers  0/1, pass to build script (default: 1)
   --skip-dashboard      0/1, pass to build script (default: 0)
+  --dashboard-mode      auto|local|release|skip (default: auto)
   --enable-service      Enable systemd service after build
   --service-name NAME   systemd service name (default: neuron)
   -h, --help            Show this help
@@ -103,6 +108,10 @@ parse_args() {
         ;;
       --skip-dashboard)
         SKIP_DASHBOARD="${2:-}"
+        shift 2
+        ;;
+      --dashboard-mode)
+        DASHBOARD_MODE="${2:-}"
         shift 2
         ;;
       --enable-service)
@@ -158,7 +167,7 @@ ensure_prereqs() {
 prepare_workspace() {
   echo "==> Preparing workspace at ${INSTALL_ROOT}"
   ${SUDO} mkdir -p "${INSTALL_ROOT}"
-  ${SUDO} chown -R "${USER}:$(id -gn "${USER}")" "${INSTALL_ROOT}"
+  ${SUDO} chown -R "${EFFECTIVE_USER}:${EFFECTIVE_GROUP}" "${INSTALL_ROOT}"
 }
 
 sync_source() {
@@ -198,6 +207,7 @@ run_native_build() {
     BUILD_JOBS="${BUILD_JOBS}" \
     DISABLE_DATALAYERS="${DISABLE_DATALAYERS}" \
     SKIP_DASHBOARD="${SKIP_DASHBOARD}" \
+    DASHBOARD_MODE="${DASHBOARD_MODE}" \
     INSTALL_DEPS=1 \
     "${builder}"
   )

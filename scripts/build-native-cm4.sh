@@ -14,6 +14,7 @@
 #   BUILD_JOBS=$(nproc)
 #   DISABLE_DATALAYERS=1
 #   SKIP_DASHBOARD=0
+#   DASHBOARD_MODE=auto   # auto|local|release|skip
 #
 set -euo pipefail
 
@@ -24,6 +25,7 @@ INSTALL_DEPS="${INSTALL_DEPS:-1}"
 BUILD_JOBS="${BUILD_JOBS:-$(nproc)}"
 DISABLE_DATALAYERS="${DISABLE_DATALAYERS:-1}"
 SKIP_DASHBOARD="${SKIP_DASHBOARD:-0}"
+DASHBOARD_MODE="${DASHBOARD_MODE:-auto}"
 
 SUDO=""
 if [[ "${EUID}" -ne 0 ]]; then
@@ -54,6 +56,28 @@ ensure_system_packages() {
     build-essential cmake git pkg-config ca-certificates wget unzip curl python3 \
     libssl-dev libxml2-dev libmbedtls-dev libsqlite3-dev \
     libprotobuf-c-dev librdkafka-dev zlib1g-dev
+}
+
+ensure_dashboard_build_tools() {
+  if ! need_cmd node; then
+    echo "==> Installing Node.js + npm for dashboard build"
+    ${SUDO} apt-get update -qq
+    ${SUDO} apt-get install -y -qq nodejs npm
+  fi
+
+  if need_cmd yarn; then
+    return
+  fi
+
+  if need_cmd corepack; then
+    corepack enable >/dev/null 2>&1 || true
+    corepack prepare yarn@stable --activate >/dev/null 2>&1 || true
+  fi
+
+  if ! need_cmd yarn; then
+    echo "==> Installing yarn"
+    ${SUDO} npm install -g yarn >/dev/null
+  fi
 }
 
 build_zlog() {
@@ -134,17 +158,83 @@ build_open62541() {
   ${SUDO} cmake --install /tmp/open62541/build
 }
 
-download_dashboard() {
-  if [[ "${SKIP_DASHBOARD}" == "1" ]]; then
-    echo "==> SKIP_DASHBOARD=1, skipping dashboard download"
+build_dashboard_local() {
+  local dashboard_dir="${ROOT_DIR}/neuron-dashboard"
+  local dist_dir="${ROOT_DIR}/${BUILD_DIR}/dist"
+
+  if [[ ! -d "${dashboard_dir}" ]]; then
+    return 1
+  fi
+
+  echo "==> Building dashboard from local source: ${dashboard_dir}"
+  ensure_dashboard_build_tools
+  (
+    cd "${dashboard_dir}"
+    yarn install --frozen-lockfile >/dev/null 2>&1 || yarn install
+    yarn build
+  )
+
+  rm -rf "${dist_dir}"
+  mkdir -p "${dist_dir}"
+
+  if [[ -f "${dashboard_dir}/dist/index.html" ]]; then
+    cp -a "${dashboard_dir}/dist/." "${dist_dir}/"
+    return 0
+  fi
+
+  if [[ -f "${dashboard_dir}/dist/web/index.html" ]]; then
+    cp -a "${dashboard_dir}/dist/web/." "${dist_dir}/"
     return
   fi
-  echo "==> Downloading dashboard bundle"
+
+  echo "ERROR: Cannot find dashboard build output in ${dashboard_dir}/dist" >&2
+  return 1
+}
+
+download_dashboard_release() {
+  local dist_dir="${ROOT_DIR}/${BUILD_DIR}/dist"
+  echo "==> Downloading dashboard release bundle"
   wget -q \
     https://github.com/emqx/neuron-dashboard/releases/download/2.6.3/neuron-dashboard.zip \
     -O /tmp/neuron-dashboard.zip
   unzip -q -o /tmp/neuron-dashboard.zip -d "${ROOT_DIR}/${BUILD_DIR}"
   rm -f /tmp/neuron-dashboard.zip
+
+  if [[ ! -d "${dist_dir}" ]]; then
+    echo "==> WARN: release bundle did not create ${dist_dir}"
+  fi
+}
+
+prepare_dashboard() {
+  local mode="${DASHBOARD_MODE}"
+  if [[ "${SKIP_DASHBOARD}" == "1" ]]; then
+    mode="skip"
+  fi
+
+  case "${mode}" in
+    skip)
+      echo "==> Skipping dashboard bundle"
+      ;;
+    local)
+      if ! build_dashboard_local; then
+        echo "ERROR: DASHBOARD_MODE=local but local dashboard build failed" >&2
+        exit 1
+      fi
+      ;;
+    release)
+      download_dashboard_release
+      ;;
+    auto)
+      if ! build_dashboard_local; then
+        echo "==> Local dashboard not available, falling back to release bundle"
+        download_dashboard_release
+      fi
+      ;;
+    *)
+      echo "ERROR: invalid DASHBOARD_MODE=${mode} (use auto|local|release|skip)" >&2
+      exit 1
+      ;;
+  esac
 }
 
 build_neuron() {
@@ -199,7 +289,7 @@ main() {
   fi
 
   build_neuron
-  download_dashboard
+  prepare_dashboard
   post_check
 }
 

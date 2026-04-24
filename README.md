@@ -115,12 +115,15 @@ See the quick start for a hands-on walkthrough.
 - Quick start: [Modbus TCP collection and MQTT publishing](./docs/quick_start/quick_start.md)
 - APIs: [HTTP](docs/api/english/http.md), [MQTT](docs/api/english/mqtt.md)
 - Bulk north MQTT subscribe + optional tags from Excel: [scripts/neuron-excel-import/](scripts/neuron-excel-import/) (`neuron_excel_import.py`, template `.xlsx`, `OPERATOR_NOTES.txt`)
-- CM4 Docker deployment: [deploy/cm4/README.md](./deploy/cm4/README.md)
-- CM4 one-command setup script: [scripts/cm4-one-command-setup.sh](./scripts/cm4-one-command-setup.sh)
-- CM4 remote install (`curl | bash`, no clone): [scripts/install-cm4-remote.sh](./scripts/install-cm4-remote.sh)
-- CM4 **simulator** (ARM64 Docker-in-Docker for dry-runs): [deploy/cm4/README.md](./deploy/cm4/README.md) section **0b**, helper [scripts/run-cm4-simulator.sh](./scripts/run-cm4-simulator.sh)
-  - Example (fork [dichvunuoc/emqx-neuron](https://github.com/dichvunuoc/emqx-neuron)):  
-    `curl -fsSL https://raw.githubusercontent.com/dichvunuoc/emqx-neuron/main/scripts/install-cm4-remote.sh | bash -s -- --public-image`
+- CM4 native build helper (no Docker): [scripts/build-native-cm4.sh](./scripts/build-native-cm4.sh)
+- CM4 one-command setup (native only): [scripts/cm4-one-command-setup.sh](./scripts/cm4-one-command-setup.sh)
+- CM4 remote install (`curl | bash`, native): [scripts/install-cm4-native-remote.sh](./scripts/install-cm4-native-remote.sh)
+  - Example:  
+    `curl -fsSL https://raw.githubusercontent.com/dichvunuoc/emqx-neuron/main/scripts/install-cm4-native-remote.sh | bash -s -- --repo https://github.com/dichvunuoc/emqx-neuron.git --branch main --enable-service`
+- CM4 safe upgrade (preserve existing runtime data/config): [scripts/upgrade-cm4-native-safe-remote.sh](./scripts/upgrade-cm4-native-safe-remote.sh)
+  - Example:  
+    `curl -fsSL https://raw.githubusercontent.com/dichvunuoc/emqx-neuron/main/scripts/upgrade-cm4-native-safe-remote.sh | bash -s -- --repo https://github.com/dichvunuoc/emqx-neuron.git --branch main`
+- Remote Control SOP (Dashboard + backend stub + remote server): [scripts/neuron-remote-control/docs/remote-control-sop.md](./scripts/neuron-remote-control/docs/remote-control-sop.md)
 
 ## Dashboard
 
@@ -145,3 +148,6 @@ If you believe you have found a security vulnerability, please avoid creating a 
 ## License
 
 See [LICENSE](./LICENSE).
+
+
+

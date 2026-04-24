@@ -1,0 +1,17 @@
+FROM python:3.11-slim
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends openssl && rm -rf /var/lib/apt/lists/*
+
+COPY scripts/neuron-remote-control/remote-server/requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir -r /app/requirements.txt
+
+COPY scripts/neuron-remote-control/remote-server /app/remote-server
+
+RUN mkdir -p /app/certs && openssl req -x509 -nodes -newkey rsa:2048 \
+  -keyout /app/certs/server.key \
+  -out /app/certs/server.crt \
+  -days 365 \
+  -subj "/CN=remote-control"
+
+CMD ["uvicorn", "app.main:app", "--app-dir", "/app/remote-server", "--host", "0.0.0.0", "--port", "9010", "--ssl-keyfile", "/app/certs/server.key", "--ssl-certfile", "/app/certs/server.crt"]

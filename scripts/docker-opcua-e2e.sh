@@ -1,64 +1,27 @@
 #!/usr/bin/env bash
-# Run in Linux Docker (e.g. ghcr.io/neugates/build:x86_64-main): build open62541 + Neuron, start neuron, run OPC UA E2E pytest.
 set -euo pipefail
 
-export DEBIAN_FRONTEND=noninteractive
-apt-get update -qq
-apt-get install -y -qq git ca-certificates python3-pip
+# Legacy name kept for compatibility; this now runs native flow.
 
-python3 -m pip install -q pytest asyncua requests
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+BUILD_DIR="${BUILD_DIR:-build-native-cm4}"
 
-O62541_TAG="${O62541_TAG:-v1.4.6}"
+echo "NOTE: Docker OPC UA E2E flow was removed."
+echo "Running native build + OPC UA E2E test..."
 
-if ! ldconfig -p 2>/dev/null | grep -q 'libopen62541.so'; then
-  rm -rf /tmp/open62541
-  git clone --depth 1 --branch "${O62541_TAG}" https://github.com/open62541/open62541.git /tmp/open62541
-  mkdir -p /tmp/open62541/build
-  cd /tmp/open62541/build
-  # Same compiler as Neuron cross toolchain when present
-  CC_BIN="${CC:-cc}"
-  command -v x86_64-linux-gnu-gcc >/dev/null && CC_BIN=x86_64-linux-gnu-gcc
-  cmake .. \
-    -DCMAKE_C_COMPILER="${CC_BIN}" \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DBUILD_SHARED_LIBS=ON \
-    -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF
-  cmake --build . -j1
-  cmake --install .
-  ldconfig
+"${ROOT_DIR}/scripts/build-native-cm4.sh"
+
+if [[ ! -x "${ROOT_DIR}/${BUILD_DIR}/neuron" ]]; then
+  echo "ERROR: ${ROOT_DIR}/${BUILD_DIR}/neuron not found" >&2
+  exit 1
 fi
 
-cd /workspace
-git config --global --add safe.directory /workspace
-
-rm -rf build-docker-opcua-e2e
-mkdir -p build-docker-opcua-e2e
-cd build-docker-opcua-e2e
-
-cmake .. \
-  -DCMAKE_TOOLCHAIN_FILE=../cmake/x86_64-linux-gnu.cmake \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DDISABLE_UT=ON \
-  -DCMAKE_PREFIX_PATH=/usr/local
-
-# Parallel link with LTO can hit "jobserver: Bad file descriptor" in some Docker/shell setups.
-cmake --build . -j1
-
-export LD_LIBRARY_PATH="/usr/local/lib:${LD_LIBRARY_PATH:-}"
-# Ensure open62541 is on the link map before plugins resolve internal client symbols (e.g. __UA_Client_connect).
-export LD_PRELOAD="/usr/local/lib/libopen62541.so${LD_PRELOAD:+:${LD_PRELOAD}}"
-
-cd /workspace/build-docker-opcua-e2e
-./neuron --log &
-NPID=$!
-sleep 15
-
-cd /workspace/tests/ft
-set +e
-OPCUA_E2E=1 python3 -m pytest driver/test_opcua_plugin.py::TestOpcUaPluginE2e -v --tb=short
-EC=$?
-set -e
-
-kill "${NPID}" 2>/dev/null || true
-wait "${NPID}" 2>/dev/null || true
-exit "${EC}"
+(
+  cd "${ROOT_DIR}/${BUILD_DIR}"
+  LD_LIBRARY_PATH="/usr/local/lib:${LD_LIBRARY_PATH:-}" ./neuron --log &
+  NPID=$!
+  trap 'kill "${NPID}" 2>/dev/null || true' EXIT
+  sleep 10
+  cd "${ROOT_DIR}/tests/ft"
+  OPCUA_E2E=1 python3 -m pytest driver/test_opcua_plugin.py::TestOpcUaPluginE2e -v --tb=short
+)

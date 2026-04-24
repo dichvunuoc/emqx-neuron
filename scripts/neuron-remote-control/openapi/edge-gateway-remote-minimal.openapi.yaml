@@ -1,0 +1,257 @@
+openapi: 3.0.3
+info:
+  title: Edge Gateway Remote Minimal API
+  version: 0.1.0
+  description: >-
+    Minimal remote-only contract for NAT-hidden Neuron gateways.
+    REMOTE never calls gateway IP directly; all routing is by edgeGatewayId over
+    an outbound reverse channel session established by GatewayAgent.
+servers:
+  - url: https://remote-control.example.com
+tags:
+  - name: EdgeGateways
+  - name: Commands
+paths:
+  /v1/edge-gateways:
+    post:
+      tags: [EdgeGateways]
+      summary: Create one edge gateway and return bootstrap mapping parameters
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEdgeGatewayRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateEdgeGatewayResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/edge-gateways/{edgeGatewayId}/commands:
+    post:
+      tags: [Commands]
+      summary: Send command to one edge gateway by ID (no direct IP required)
+      parameters:
+        - $ref: '#/components/parameters/EdgeGatewayId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DispatchCommandRequest'
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DispatchCommandResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Edge gateway is not connected to reverse channel
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v1/edge-gateways/{edgeGatewayId}/commands/{commandId}:
+    get:
+      tags: [Commands]
+      summary: Get command result/status by edgeGatewayId + commandId
+      parameters:
+        - $ref: '#/components/parameters/EdgeGatewayId'
+        - $ref: '#/components/parameters/CommandId'
+      responses:
+        '200':
+          description: Command status/result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandResultResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+components:
+  parameters:
+    EdgeGatewayId:
+      name: edgeGatewayId
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: '^[a-zA-Z0-9._:-]{3,128}$'
+    CommandId:
+      name: commandId
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: '^[a-zA-Z0-9._:-]{16,128}$'
+  responses:
+    ValidationError:
+      description: Request validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: Resource already exists or has state conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+  schemas:
+    CreateEdgeGatewayRequest:
+      type: object
+      required: [edgeGatewayId, siteCode]
+      properties:
+        edgeGatewayId:
+          type: string
+        siteCode:
+          type: string
+        displayName:
+          type: string
+        authMode:
+          type: string
+          enum: [mtls, mtls_hmac]
+          default: mtls
+    CreateEdgeGatewayResponse:
+      type: object
+      required: [edgeGatewayId, bootstrap]
+      properties:
+        edgeGatewayId:
+          type: string
+        bootstrap:
+          type: object
+          required: [controlServerUrl, authMode]
+          properties:
+            controlServerUrl:
+              type: string
+              description: WSS endpoint that Neuron maps in local Remote Control UI/API
+              pattern: '^wss://'
+            authMode:
+              type: string
+              enum: [mtls, mtls_hmac]
+            heartbeatSec:
+              type: integer
+              default: 20
+            reconnectSec:
+              type: integer
+              default: 3
+            hmacSecret:
+              type: string
+              description: Only returned when authMode=mtls_hmac
+        createdAt:
+          type: string
+          format: date-time
+    DispatchCommandRequest:
+      type: object
+      required: [commandId, operation, neuronRequest, timeoutMs, idempotencyKey]
+      properties:
+        commandId:
+          type: string
+        operation:
+          type: string
+          enum: [get_version, get_nodes, get_groups, get_tags, get_subscribe, get_subscribes, read_tags]
+        neuronRequest:
+          $ref: '#/components/schemas/NeuronRequest'
+        timeoutMs:
+          type: integer
+          minimum: 1000
+          maximum: 120000
+        idempotencyKey:
+          type: string
+        dryRun:
+          type: boolean
+          default: false
+    DispatchCommandResponse:
+      type: object
+      required: [edgeGatewayId, commandId, status, queuedAt]
+      properties:
+        edgeGatewayId:
+          type: string
+        commandId:
+          type: string
+        status:
+          type: string
+          enum: [queued]
+        queuedAt:
+          type: string
+          format: date-time
+    CommandResultResponse:
+      type: object
+      required: [edgeGatewayId, commandId, status]
+      properties:
+        edgeGatewayId:
+          type: string
+        commandId:
+          type: string
+        status:
+          type: string
+          enum: [queued, running, success, failed, timeout, rejected]
+        httpStatus:
+          type: integer
+        result:
+          oneOf:
+            - type: object
+            - type: array
+            - type: string
+            - type: number
+            - type: boolean
+            - type: 'null'
+        errorMessage:
+          type: string
+        startedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+    NeuronRequest:
+      type: object
+      required: [method, path]
+      properties:
+        method:
+          type: string
+          enum: [GET, POST, PUT, DELETE]
+        path:
+          type: string
+          pattern: '^/api/v2/[a-zA-Z0-9/_-]*$'
+        query:
+          type: object
+          additionalProperties:
+            oneOf:
+              - type: string
+              - type: number
+              - type: boolean
+        body:
+          oneOf:
+            - type: object
+            - type: array
+            - type: string
+            - type: number
+            - type: boolean
+            - type: 'null'
+    ErrorResponse:
+      type: object
+      required: [errorCode, message]
+      properties:
+        errorCode:
+          type: string
+        message:
+          type: string
+        traceId:
+          type: string

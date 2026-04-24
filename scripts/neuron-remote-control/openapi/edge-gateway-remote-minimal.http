@@ -1,0 +1,63 @@
+@baseUrl = https://localhost:9010
+@edgeGatewayId = gw_demo_001
+@commandId = cmd_get_groups_20260423_001
+
+### REMOTE REST API test (complete remote-server)
+### IMPORTANT:
+### - Server uses self-signed cert in demo.
+### - If your REST client fails TLS validation, run equivalent curl with -k.
+###   Example:
+###   curl -k -X POST {{baseUrl}}/v1/edge-gateways ...
+
+### 1) Create edge gateway and receive bootstrap mapping
+POST {{baseUrl}}/v1/edge-gateways
+Content-Type: application/json
+
+{
+  "edgeGatewayId": "{{edgeGatewayId}}",
+  "siteCode": "QN-WTP-01",
+  "displayName": "MiniPC Demo 01",
+  "authMode": "mtls"
+}
+
+### 2) Dispatch get_groups command by edgeGatewayId
+POST {{baseUrl}}/v1/edge-gateways/{{edgeGatewayId}}/commands
+Content-Type: application/json
+
+{
+  "commandId": "{{commandId}}",
+  "operation": "get_groups",
+  "neuronRequest": {
+    "method": "GET",
+    "path": "/api/v2/group"
+  },
+  "timeoutMs": 10000,
+  "idempotencyKey": "gw_demo_001:get_groups:20260423:001",
+  "dryRun": false
+}
+
+### 3) Poll command result
+GET {{baseUrl}}/v1/edge-gateways/{{edgeGatewayId}}/commands/{{commandId}}
+
+### 4) Dispatch get_tags command
+POST {{baseUrl}}/v1/edge-gateways/{{edgeGatewayId}}/commands
+Content-Type: application/json
+
+{
+  "commandId": "cmd_get_tags_20260423_001",
+  "operation": "get_tags",
+  "neuronRequest": {
+    "method": "GET",
+    "path": "/api/v2/tags",
+    "query": {
+      "node": "BL1_1",
+      "group": "TSC"
+    }
+  },
+  "timeoutMs": 10000,
+  "dryRun": false
+}
+
+### 5) Poll get_tags result
+GET {{baseUrl}}/v1/edge-gateways/{{edgeGatewayId}}/commands/cmd_get_tags_20260423_001
+

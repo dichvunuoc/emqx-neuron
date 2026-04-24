@@ -1,6 +1,60 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Legacy script name kept for compatibility.
+# Docker image build was removed; this script now produces a native tarball.
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+BUILD_DIR="${BUILD_DIR:-build-native-cm4}"
+OUTPUT_TAR="${OUTPUT_TAR:-neuron-native-arm64.tar.gz}"
+
+if [[ ! -x "${ROOT_DIR}/scripts/build-native-cm4.sh" ]]; then
+  chmod +x "${ROOT_DIR}/scripts/build-native-cm4.sh"
+fi
+
+"${ROOT_DIR}/scripts/build-native-cm4.sh"
+
+if [[ ! -f "${ROOT_DIR}/${BUILD_DIR}/neuron" ]]; then
+  echo "ERROR: native build output not found at ${ROOT_DIR}/${BUILD_DIR}/neuron" >&2
+  exit 1
+fi
+
+echo "Creating native package ${OUTPUT_TAR}"
+PACKAGE_ITEMS=(neuron)
+[[ -d "${ROOT_DIR}/${BUILD_DIR}/plugins" ]] && PACKAGE_ITEMS+=(plugins)
+[[ -d "${ROOT_DIR}/${BUILD_DIR}/config" ]] && PACKAGE_ITEMS+=(config)
+tar -C "${ROOT_DIR}/${BUILD_DIR}" -czf "${ROOT_DIR}/${OUTPUT_TAR}" "${PACKAGE_ITEMS[@]}"
+echo "Done: ${ROOT_DIR}/${OUTPUT_TAR}"
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Legacy script name kept for compatibility.
+# Docker image build was removed; this script now produces a native tarball.
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+BUILD_DIR="${BUILD_DIR:-build-native-cm4}"
+OUTPUT_TAR="${OUTPUT_TAR:-neuron-native-arm64.tar.gz}"
+
+if [[ ! -x "${ROOT_DIR}/scripts/build-native-cm4.sh" ]]; then
+  chmod +x "${ROOT_DIR}/scripts/build-native-cm4.sh"
+fi
+
+"${ROOT_DIR}/scripts/build-native-cm4.sh"
+
+if [[ ! -f "${ROOT_DIR}/${BUILD_DIR}/neuron" ]]; then
+  echo "ERROR: native build output not found at ${ROOT_DIR}/${BUILD_DIR}/neuron" >&2
+  exit 1
+fi
+
+echo "Creating native package ${OUTPUT_TAR}"
+PACKAGE_ITEMS=(neuron)
+[[ -d "${ROOT_DIR}/${BUILD_DIR}/plugins" ]] && PACKAGE_ITEMS+=(plugins)
+[[ -d "${ROOT_DIR}/${BUILD_DIR}/config" ]] && PACKAGE_ITEMS+=(config)
+tar -C "${ROOT_DIR}/${BUILD_DIR}" -czf "${ROOT_DIR}/${OUTPUT_TAR}" "${PACKAGE_ITEMS[@]}"
+echo "Done: ${ROOT_DIR}/${OUTPUT_TAR}"
+#!/usr/bin/env bash
+set -euo pipefail
+
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 IMAGE_NAME="${IMAGE_NAME:-neuron:cm4}"
 DOCKERFILE_PATH="${DOCKERFILE_PATH:-Dockerfile.cm4}"

@@ -1,10 +1,10 @@
 services:
-  mock-router:
+  remote-server:
     build:
       context: ../../..
-      dockerfile: scripts/neuron-remote-control/demo/Dockerfile.mock-router
+      dockerfile: scripts/neuron-remote-control/demo/Dockerfile.remote-server
     ports:
-      - "9001:9001"
+      - "9010:9010"
 
   backend-stub:
     build:
@@ -15,4 +15,4 @@ services:
     ports:
       - "18080:18080"
     depends_on:
-      - mock-router
+      - remote-server

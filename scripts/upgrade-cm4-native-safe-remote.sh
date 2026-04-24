@@ -43,6 +43,10 @@ SUDO=""
 if [[ "${EUID}" -ne 0 ]]; then
   SUDO="sudo"
 fi
+HAS_SYSTEMCTL=0
+if command -v systemctl >/dev/null 2>&1; then
+  HAS_SYSTEMCTL=1
+fi
 
 usage() {
   cat <<'HELP'
@@ -147,6 +151,9 @@ validate_inputs() {
 }
 
 stop_services_if_running() {
+  if [[ "${HAS_SYSTEMCTL}" != "1" ]]; then
+    return
+  fi
   if ${SUDO} systemctl list-unit-files | rg -q "^${SERVICE_NAME}\\.service"; then
     if ${SUDO} systemctl is-active --quiet "${SERVICE_NAME}"; then
       echo "==> Stopping ${SERVICE_NAME}"
@@ -191,12 +198,40 @@ backup_runtime_data() {
 
 run_upgrade_build() {
   local installer="${INSTALL_ROOT}/${SRC_DIR_NAME}/scripts/install-cm4-native-remote.sh"
+  local temp_installer=""
+  local enable_service_args=()
+  local src_path="${INSTALL_ROOT}/${SRC_DIR_NAME}"
+  local build_path="${src_path}/${BUILD_DIR}"
+
   if [[ ! -f "${installer}" ]]; then
     installer="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/install-cm4-native-remote.sh"
   fi
   if [[ ! -f "${installer}" ]]; then
-    echo "ERROR: Cannot find install-cm4-native-remote.sh" >&2
-    exit 1
+    if command -v curl >/dev/null 2>&1; then
+      local repo_path
+      repo_path="$(printf '%s' "${REPO_URL}" | sed -E 's#^https?://github.com/##; s#\.git$##')"
+      temp_installer="/tmp/install-cm4-native-remote.sh.$$"
+      echo "==> Fetching installer from GitHub"
+      curl -fsSL "https://raw.githubusercontent.com/${repo_path}/${REPO_BRANCH}/scripts/install-cm4-native-remote.sh" -o "${temp_installer}"
+      chmod +x "${temp_installer}"
+      installer="${temp_installer}"
+    else
+      echo "ERROR: Cannot find install-cm4-native-remote.sh and curl is unavailable" >&2
+      exit 1
+    fi
+  fi
+
+  if [[ "${HAS_SYSTEMCTL}" == "1" ]]; then
+    enable_service_args=(--enable-service --service-name "${SERVICE_NAME}")
+  else
+    echo "==> systemctl not found, skip service management during upgrade"
+  fi
+
+  # Avoid stale CMake cache path mismatch when source path changes.
+  if [[ -f "${build_path}/CMakeCache.txt" ]]; then
+    echo "==> Removing stale CMake cache in ${build_path}"
+    rm -f "${build_path}/CMakeCache.txt"
+    rm -rf "${build_path}/CMakeFiles"
   fi
 
   echo "==> Upgrading Neuron source + build"
@@ -211,8 +246,11 @@ run_upgrade_build() {
     --disable-datalayers "${DISABLE_DATALAYERS}" \
     --skip-dashboard "${SKIP_DASHBOARD}" \
     --dashboard-mode "${DASHBOARD_MODE}" \
-    --enable-service \
-    --service-name "${SERVICE_NAME}"
+    "${enable_service_args[@]}"
+
+  if [[ -n "${temp_installer}" ]]; then
+    rm -f "${temp_installer}"
+  fi
 }
 
 restore_runtime_data() {
@@ -324,6 +362,9 @@ EOF
 }
 
 start_services() {
+  if [[ "${HAS_SYSTEMCTL}" != "1" ]]; then
+    return
+  fi
   ${SUDO} systemctl daemon-reload
   ${SUDO} systemctl enable --now "${SERVICE_NAME}"
   if [[ "${ENABLE_REMOTE_STUB}" == "1" ]]; then
@@ -344,9 +385,15 @@ print_summary() {
   fi
   echo
   echo "Quick check:"
-  echo "  sudo systemctl status ${SERVICE_NAME}"
+  if [[ "${HAS_SYSTEMCTL}" == "1" ]]; then
+    echo "  sudo systemctl status ${SERVICE_NAME}"
+  else
+    echo "  systemctl not available in this environment"
+  fi
   if [[ "${ENABLE_REMOTE_STUB}" == "1" ]]; then
-    echo "  sudo systemctl status ${REMOTE_STUB_SERVICE_NAME}"
+    if [[ "${HAS_SYSTEMCTL}" == "1" ]]; then
+      echo "  sudo systemctl status ${REMOTE_STUB_SERVICE_NAME}"
+    fi
     echo "  curl -s http://127.0.0.1:${REMOTE_STUB_PORT}/api/v2/remote/connection"
   fi
 }

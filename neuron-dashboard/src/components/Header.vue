@@ -1,7 +1,7 @@
 <template>
   <emqx-header class="header">
     <template #title>
-      <img src="../assets/images/logo.png" alt="systems-edgegateway-logo" width="141" />
+      <img class="brand-logo" src="../assets/images/logo.png" alt="systems-edgegateway-logo" />
     </template>
 
     <template v-slot:right>
@@ -129,6 +129,14 @@ const changeLanguage = (command: string) => {
 @import '@/styles/emqx-ui-variables.scss';
 
 .header {
+  .brand-logo {
+    display: block;
+    width: auto;
+    max-width: 160px;
+    max-height: 44px;
+    object-fit: contain;
+  }
+
   .el-dropdown {
     color: #fff;
   }

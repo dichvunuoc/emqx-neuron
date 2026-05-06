@@ -1,14 +1,11 @@
-# Mini PC stack: Neuron (UI baked in image) + remote-control FastAPI stub.
-# Images must be built and pushed separately (see scripts/docker-release-build.sh).
-# Do not mount ./data/dist — an empty host dir would hide the UI inside the image.
+# Mini PC stack: Neuron + remote-control FastAPI stub, exposed on one origin.
+# /api/v2/remote/* -> remote-stub, everything else -> Neuron dashboard/API.
 
 services:
   neuron:
     image: ${NEURON_IMAGE}
     container_name: neuron-minipc
     restart: unless-stopped
-    ports:
-      - "${NEURON_HTTP_PORT:-7000}:7000"
     environment:
       TZ: ${TZ:-UTC}
       NEURON_LOG_LEVEL: ${NEURON_LOG_LEVEL:-info}
@@ -42,6 +39,25 @@ services:
       REMOTE_NEURON_BASE_URL: http://neuron:7000
       REMOTE_NEURON_TOKEN: ${REMOTE_NEURON_TOKEN:-}
       REMOTE_TLS_INSECURE: ${REMOTE_TLS_INSECURE:-0}
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  edge-proxy:
+    image: nginx:1.27-alpine
+    container_name: neuron-edge-proxy
+    restart: unless-stopped
+    depends_on:
+      neuron:
+        condition: service_started
+      remote-stub:
+        condition: service_started
+    ports:
+      - "${NEURON_HTTP_PORT:-80}:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
     logging:
       driver: json-file
       options:

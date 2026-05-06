@@ -1,0 +1,20 @@
+# Build cả Neuron + remote-stub trong một lệnh (image tag trùng phiên bản):
+#   cd deploy/minipc && cp .env.example .env  # chỉnh NEURON_IMAGE + REMOTE_STUB_IMAGE (hoặc dùng STACK_* trong script)
+#
+#   docker compose -f docker-compose.build.yml --env-file .env build
+#
+# CM4: trong .env đặt NEURON_DOCKERFILE=Dockerfile.cm4 và PLATFORM=linux/arm64 nếu cần buildx
+# (script docker-release-build.sh vẫn là cách gọn nhất cho buildx + push).
+
+services:
+  neuron:
+    build:
+      context: ../..
+      dockerfile: ${NEURON_DOCKERFILE:-Dockerfile}
+    image: ${NEURON_IMAGE}
+
+  remote-stub:
+    build:
+      context: ../..
+      dockerfile: ${STUB_DOCKERFILE:-scripts/neuron-remote-control/demo/Dockerfile.backend-stub}
+    image: ${REMOTE_STUB_IMAGE}

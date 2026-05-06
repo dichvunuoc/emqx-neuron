@@ -280,7 +280,7 @@ def main() -> int:
         description="Discover south nodes and groups, register ioc/... MQTT topics via Neuron API"
     )
     p.add_argument("--base-url", default="http://localhost:7001", help="Neuron API base")
-    p.add_argument("--app", default="testmqtt", help="North MQTT app name")
+    p.add_argument("--app", default="mqtt-hoanhbo", help="North MQTT app name")
     p.add_argument("--token", default="", help="Bearer JWT (skip login)")
     p.add_argument("--user", default="", help="Login name if no --token")
     p.add_argument(

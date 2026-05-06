@@ -117,7 +117,7 @@ See the quick start for a hands-on walkthrough.
 - Bulk north MQTT subscribe + optional tags from Excel: [scripts/neuron-excel-import/](scripts/neuron-excel-import/) (`neuron_excel_import.py`, template `.xlsx`, `OPERATOR_NOTES.txt`)
 - CM4 native build helper (no Docker): [scripts/build-native-cm4.sh](./scripts/build-native-cm4.sh)
 - CM4 one-command setup (native only): [scripts/cm4-one-command-setup.sh](./scripts/cm4-one-command-setup.sh)
-- Mini PC Docker stack (Neuron UI from source + remote stub, `curl | bash`): [deploy/minipc/README.md](./deploy/minipc/README.md), [scripts/install-minipc-docker.sh](./scripts/install-minipc-docker.sh), [scripts/docker-release-build.sh](./scripts/docker-release-build.sh)
+- Mini PC Docker stack (Neuron UI from source + remote stub, `curl | bash`): [deploy/minipc/README.md](./deploy/minipc/README.md), [scripts/install-minipc-docker.sh](./scripts/install-minipc-docker.sh), [scripts/minipc-cm4-edge.sh](./scripts/minipc-cm4-edge.sh) (install/update khi đã SSH vào CM4), [scripts/minipc-mac-ssh-deploy.sh](./scripts/minipc-mac-ssh-deploy.sh) (Mac: build + scp + ssh cài trên mini PC), [scripts/docker-release-build.sh](./scripts/docker-release-build.sh)
 - CM4 remote install (`curl | bash`, native): [scripts/install-cm4-native-remote.sh](./scripts/install-cm4-native-remote.sh)
   - Example:  
     `curl -fsSL https://raw.githubusercontent.com/dichvunuoc/emqx-neuron/main/scripts/install-cm4-native-remote.sh | bash -s -- --repo https://github.com/dichvunuoc/emqx-neuron.git --branch main --enable-service`

@@ -8,6 +8,8 @@
 # Env (optional):
 #   INSTALL_DIR=/opt/neuron-minipc
 #   SOURCE_BASE_URL=https://raw.githubusercontent.com/<owner>/<repo>/main/deploy/minipc
+#   STACK_REGISTRY=registry.example.com/iot  STACK_TAG=1.0   # cùng tag cho neuron-full + neuron-remote-stub
+#   STACK_IMAGE_TAR=/path/neuron-stack-1.0.tar   # docker save cả hai (EXPORT_STACK_TAR=1 khi build)
 #   IMAGE_TAR=/path/neuron.tar STUB_IMAGE_TAR=/path/stub.tar
 #   SKIP_DOCKER_INSTALL=1
 #
@@ -17,6 +19,7 @@ INSTALL_DIR="${INSTALL_DIR:-/opt/neuron-minipc}"
 SOURCE_BASE_URL="${SOURCE_BASE_URL:-}"
 NEURON_IMAGE="${NEURON_IMAGE:-}"
 REMOTE_STUB_IMAGE="${REMOTE_STUB_IMAGE:-}"
+STUB_IMAGE="${STUB_IMAGE:-}"
 SKIP_DOCKER_INSTALL="${SKIP_DOCKER_INSTALL:-0}"
 
 SUDO=""
@@ -40,6 +43,22 @@ DC() {
   fi
 }
 
+# Neuron cài qua .deb/apt thường có neuron.service — tắt để Docker không bị trùng cổng / hai bản chạy song song.
+minipc_disable_native_neuron() {
+  if ! command -v systemctl >/dev/null 2>&1; then
+    return 0
+  fi
+  local frag
+  frag="$(${SUDO} systemctl show -p FragmentPath --value neuron.service 2>/dev/null || true)"
+  if [[ -z "${frag}" ]]; then
+    return 0
+  fi
+  echo ">> Phát hiện neuron.service (Neuron native) — stop, disable, mask (chỉ chạy Neuron trong Docker)."
+  ${SUDO} systemctl stop neuron.service 2>/dev/null || true
+  ${SUDO} systemctl disable neuron.service 2>/dev/null || true
+  ${SUDO} systemctl mask neuron.service 2>/dev/null || true
+}
+
 usage() {
   cat <<'HELP'
 Usage:
@@ -55,6 +74,7 @@ Options:
 Env:
   INSTALL_SCRIPT_REPO   owner/repo for GitHub raw paths (default: emqx/neuron)
   INSTALL_SCRIPT_BRANCH branch name (default: main)
+  STACK_REGISTRY        + STACK_TAG → tự set NEURON_IMAGE / REMOTE_STUB_IMAGE (nếu chưa truyền --neuron-image)
   IMAGE_TAR             docker load this tar for Neuron image (optional)
   STUB_IMAGE_TAR        docker load this tar for stub image (optional)
 HELP
@@ -62,6 +82,8 @@ HELP
 
 INSTALL_SCRIPT_REPO="${INSTALL_SCRIPT_REPO:-emqx/neuron}"
 INSTALL_SCRIPT_BRANCH="${INSTALL_SCRIPT_BRANCH:-main}"
+STACK_REGISTRY="${STACK_REGISTRY:-}"
+STACK_TAG="${STACK_TAG:-latest}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -101,21 +123,29 @@ if [[ -z "${SOURCE_BASE_URL}" ]]; then
   SOURCE_BASE_URL="https://raw.githubusercontent.com/${INSTALL_SCRIPT_REPO}/${INSTALL_SCRIPT_BRANCH}/deploy/minipc"
 fi
 
+if [[ -n "${STACK_REGISTRY}" ]]; then
+  NEURON_IMAGE="${NEURON_IMAGE:-${STACK_REGISTRY}/neuron-full:${STACK_TAG}}"
+  REMOTE_STUB_IMAGE="${REMOTE_STUB_IMAGE:-${STUB_IMAGE:-${STACK_REGISTRY}/neuron-remote-stub:${STACK_TAG}}}"
+fi
+
 if [[ -z "${NEURON_IMAGE}" || -z "${REMOTE_STUB_IMAGE}" ]]; then
-  echo "ERROR: set --neuron-image and --stub-image (or NEURON_IMAGE / REMOTE_STUB_IMAGE)." >&2
+  echo "ERROR: set --neuron-image và --stub-image, hoặc STACK_REGISTRY (+ STACK_TAG), hoặc NEURON_IMAGE / REMOTE_STUB_IMAGE." >&2
   usage
   exit 1
 fi
 
-if [[ "${SKIP_DOCKER_INSTALL}" != "1" ]]; then
-  if ! command -v docker >/dev/null 2>&1; then
-    echo ">> Installing Docker..."
-    curl -fsSL https://get.docker.com | ${SUDO} sh
-  fi
+if command -v docker >/dev/null 2>&1; then
+  echo ">> Docker already installed — skipping get.docker.com."
+elif [[ "${SKIP_DOCKER_INSTALL}" == "1" ]]; then
+  echo "ERROR: docker not found and SKIP_DOCKER_INSTALL=1." >&2
+  exit 1
+else
+  echo ">> Installing Docker (get.docker.com)..."
+  curl -fsSL https://get.docker.com | ${SUDO} sh
 fi
 
 if ! command -v docker >/dev/null 2>&1; then
-  echo "ERROR: docker not found. Install Docker or re-run without SKIP_DOCKER_INSTALL=1." >&2
+  echo "ERROR: docker not found after install step." >&2
   exit 1
 fi
 
@@ -131,6 +161,10 @@ TMP="$(mktemp)"
 curl -fsSL "${SOURCE_BASE_URL}/docker-compose.yml" -o "${TMP}"
 ${SUDO} install -m 0644 "${TMP}" "${INSTALL_DIR}/docker-compose.yml"
 rm -f "${TMP}"
+TMP_NGINX="$(mktemp)"
+curl -fsSL "${SOURCE_BASE_URL}/nginx.conf" -o "${TMP_NGINX}"
+${SUDO} install -m 0644 "${TMP_NGINX}" "${INSTALL_DIR}/nginx.conf"
+rm -f "${TMP_NGINX}"
 
 if [[ -f "${INSTALL_DIR}/.env" ]]; then
   echo ">> Keeping existing ${INSTALL_DIR}/.env"
@@ -148,6 +182,10 @@ if [[ "${EUID}" -ne 0 ]] && [[ -n "${USER:-}" ]]; then
   ${SUDO} chown -R "${USER}:$(id -gn)" "${INSTALL_DIR}"
 fi
 
+if [[ -n "${STACK_IMAGE_TAR:-}" ]]; then
+  echo ">> docker load stack (2 images) from ${STACK_IMAGE_TAR}"
+  DKR load -i "${STACK_IMAGE_TAR}"
+fi
 if [[ -n "${IMAGE_TAR:-}" ]]; then
   echo ">> docker load Neuron image from ${IMAGE_TAR}"
   DKR load -i "${IMAGE_TAR}"
@@ -160,6 +198,8 @@ fi
 echo ">> docker pull images"
 DKR pull "${NEURON_IMAGE}"
 DKR pull "${REMOTE_STUB_IMAGE}"
+
+minipc_disable_native_neuron
 
 echo ">> docker compose up -d"
 ( cd "${INSTALL_DIR}" && DC up -d )

@@ -26,6 +26,7 @@ extern "C" {
 
 #include "connection/mqtt_client.h"
 #include "neuron.h"
+#include "json/neu_json_rw.h"
 
 #include "mqtt_config.h"
 
@@ -43,6 +44,22 @@ typedef struct {
     UT_hash_handle hh;
 } route_entry_t;
 
+typedef struct mqtt_snapshot_tag {
+    char *               name;
+    int64_t              error;
+    enum neu_json_type   t;
+    union neu_json_value value;
+    uint8_t              precision;
+    double               bias;
+    UT_hash_handle       hh;
+} mqtt_snapshot_tag_t;
+
+typedef struct mqtt_snapshot_group {
+    route_key_t            key;
+    mqtt_snapshot_tag_t *  tags;
+    UT_hash_handle         hh;
+} mqtt_snapshot_group_t;
+
 struct neu_plugin {
     neu_plugin_common_t common;
     neu_events_t *      events;
@@ -54,6 +71,7 @@ struct neu_plugin {
     char *              read_resp_topic;
     char *              upload_topic;
     route_entry_t *     route_tbl;
+    mqtt_snapshot_group_t *snapshot_tbl;
 
     int (*parse_config)(neu_plugin_t *plugin, const char *setting,
                         mqtt_config_t *config);
@@ -77,6 +95,99 @@ static inline void route_tbl_free(route_entry_t *tbl)
     {
         HASH_DEL(tbl, e);
         route_entry_free(e);
+    }
+}
+
+static inline void snapshot_tag_free(mqtt_snapshot_tag_t *tag)
+{
+    if (tag->t == NEU_JSON_STR && tag->value.val_str != NULL) {
+        free(tag->value.val_str);
+    }
+    free(tag->name);
+    free(tag);
+}
+
+static inline void snapshot_group_free(mqtt_snapshot_group_t *group)
+{
+    mqtt_snapshot_tag_t *tag = NULL, *tmp = NULL;
+    HASH_ITER(hh, group->tags, tag, tmp)
+    {
+        HASH_DEL(group->tags, tag);
+        snapshot_tag_free(tag);
+    }
+    free(group);
+}
+
+static inline void snapshot_tbl_free(mqtt_snapshot_group_t *tbl)
+{
+    mqtt_snapshot_group_t *group = NULL, *tmp = NULL;
+    HASH_ITER(hh, tbl, group, tmp)
+    {
+        HASH_DEL(tbl, group);
+        snapshot_group_free(group);
+    }
+}
+
+static inline mqtt_snapshot_group_t *
+snapshot_tbl_get(mqtt_snapshot_group_t **tbl, const char *driver,
+                 const char *group)
+{
+    mqtt_snapshot_group_t *find = NULL;
+    route_key_t            key  = { 0 };
+    strncpy(key.driver, driver, sizeof(key.driver));
+    strncpy(key.group, group, sizeof(key.group));
+    HASH_FIND(hh, *tbl, &key, sizeof(key), find);
+    return find;
+}
+
+static inline void snapshot_tbl_del(mqtt_snapshot_group_t **tbl,
+                                    const char *driver, const char *group)
+{
+    mqtt_snapshot_group_t *find = snapshot_tbl_get(tbl, driver, group);
+    if (find != NULL) {
+        HASH_DEL(*tbl, find);
+        snapshot_group_free(find);
+    }
+}
+
+static inline void snapshot_tbl_del_driver(mqtt_snapshot_group_t **tbl,
+                                           const char *driver)
+{
+    mqtt_snapshot_group_t *e = NULL, *tmp = NULL;
+    HASH_ITER(hh, *tbl, e, tmp)
+    {
+        if (0 == strcmp(e->key.driver, driver)) {
+            HASH_DEL(*tbl, e);
+            snapshot_group_free(e);
+        }
+    }
+}
+
+static inline void snapshot_tbl_update_driver(mqtt_snapshot_group_t **tbl,
+                                              const char *driver,
+                                              const char *new_name)
+{
+    mqtt_snapshot_group_t *e = NULL, *tmp = NULL;
+    HASH_ITER(hh, *tbl, e, tmp)
+    {
+        if (0 == strcmp(e->key.driver, driver)) {
+            HASH_DEL(*tbl, e);
+            strncpy(e->key.driver, new_name, sizeof(e->key.driver));
+            HASH_ADD(hh, *tbl, key, sizeof(e->key), e);
+        }
+    }
+}
+
+static inline void snapshot_tbl_update_group(mqtt_snapshot_group_t **tbl,
+                                             const char *driver,
+                                             const char *group,
+                                             const char *new_name)
+{
+    mqtt_snapshot_group_t *e = snapshot_tbl_get(tbl, driver, group);
+    if (e != NULL) {
+        HASH_DEL(*tbl, e);
+        strncpy(e->key.group, new_name, sizeof(e->key.group));
+        HASH_ADD(hh, *tbl, key, sizeof(e->key), e);
     }
 }
 

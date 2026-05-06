@@ -3,6 +3,7 @@ import EmqxUI from '@emqx/emqx-ui'
 import App from './App.vue'
 import router from './router'
 import store from './store'
+import { DEFAULT_LANG } from '@/utils/constants'
 import i18n from './i18n'
 
 import '@emqx/emqx-ui/lib/styles/index.scss'
@@ -15,5 +16,10 @@ import '@/styles/index.scss'
 
 import '@/assets/fonts/iconfont.css'
 import '@/assets/fonts/iconfont'
+
+/** First visit: persist default locale so UI and any readers of `language` stay on vi. */
+if (!localStorage.getItem('language')) {
+  store.commit('SET_LANG', DEFAULT_LANG)
+}
 
 createApp(App).use(i18n).use(EmqxUI).use(store).use(router).mount('#neuron-dashboard')

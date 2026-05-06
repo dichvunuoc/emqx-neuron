@@ -185,6 +185,7 @@ int mqtt_plugin_uninit(neu_plugin_t *plugin)
     plugin->upload_topic = NULL;
 
     route_tbl_free(plugin->route_tbl);
+    snapshot_tbl_free(plugin->snapshot_tbl);
 
     plog_notice(plugin, "uninitialize plugin `%s` success",
                 neu_plugin_module.module_name);

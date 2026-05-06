@@ -1,6 +1,16 @@
 # Custom Neuron image from this source (OPC UA w/ open62541, local patches).
 # Build: docker build --platform linux/amd64 -t neuron-custom:local .
 # Run:  docker run --rm -p 7000:7000 neuron-custom:local
+#
+# Web UI comes from ./neuron-dashboard in this repo (not the upstream release zip).
+
+FROM node:18-bookworm AS dashboard
+WORKDIR /app
+COPY neuron-dashboard/package.json neuron-dashboard/yarn.lock ./
+ENV NODE_OPTIONS=--openssl-legacy-provider
+RUN yarn install --frozen-lockfile --network-timeout 300000
+COPY neuron-dashboard/ .
+RUN yarn build
 
 FROM ghcr.io/neugates/build:x86_64-main AS builder
 
@@ -34,11 +44,8 @@ RUN rm -rf build-docker-neuron && mkdir -p build-docker-neuron && cd build-docke
       -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF && \
     cmake --build . -j1
 
-# Open-source dashboard static files (required for / and /web — without it browsers show Not Found)
-RUN cd /workspace/build-docker-neuron && \
-    wget -q https://github.com/emqx/neuron-dashboard/releases/download/2.6.3/neuron-dashboard.zip -O /tmp/neuron-dashboard.zip && \
-    unzip -q -o /tmp/neuron-dashboard.zip -d . && \
-    rm /tmp/neuron-dashboard.zip
+# Dashboard static files from repo neuron-dashboard/ (Vue build → dist/)
+COPY --from=dashboard /app/dist /workspace/build-docker-neuron/dist
 
 # Same base as builder so linked sysroot + libs resolve at runtime without repackaging every .so.
 FROM ghcr.io/neugates/build:x86_64-main

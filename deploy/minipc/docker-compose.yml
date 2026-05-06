@@ -1,0 +1,49 @@
+# Mini PC stack: Neuron (UI baked in image) + remote-control FastAPI stub.
+# Images must be built and pushed separately (see scripts/docker-release-build.sh).
+# Do not mount ./data/dist — an empty host dir would hide the UI inside the image.
+
+services:
+  neuron:
+    image: ${NEURON_IMAGE}
+    container_name: neuron-minipc
+    restart: unless-stopped
+    ports:
+      - "${NEURON_HTTP_PORT:-7000}:7000"
+    environment:
+      TZ: ${TZ:-UTC}
+      NEURON_LOG_LEVEL: ${NEURON_LOG_LEVEL:-info}
+    volumes:
+      - ./data/config:/opt/neuron/config
+      - ./data/logs:/opt/neuron/logs
+      - ./data/persistence:/opt/neuron/persistence
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://127.0.0.1:7000 >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  remote-stub:
+    image: ${REMOTE_STUB_IMAGE}
+    container_name: neuron-remote-stub
+    restart: unless-stopped
+    depends_on:
+      neuron:
+        condition: service_started
+    ports:
+      - "${REMOTE_STUB_HTTP_PORT:-18080}:18080"
+    environment:
+      TZ: ${TZ:-UTC}
+      REMOTE_NEURON_BASE_URL: http://neuron:7000
+      REMOTE_NEURON_TOKEN: ${REMOTE_NEURON_TOKEN:-}
+      REMOTE_TLS_INSECURE: ${REMOTE_TLS_INSECURE:-0}
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

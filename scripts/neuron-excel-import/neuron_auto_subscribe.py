@@ -3,10 +3,10 @@
 Discover south drivers (GET /api/v2/node?type=1), list groups per driver, then
 POST /api/v2/subscribes with MQTT topics:
 
-  ioc/{site_slug}/{module_id}/{device_slug}/{data_type}
+  ioc/{province_slug}/{district_slug}/{module_id}/{device_slug}/{data_type}
 
-Default: site=quang-ninh, module_id=mod-01.. by sorted driver name, device_slug=slug(group),
-data_type=telemetry.
+Default: province=quang-ninh, district=hoanhbo, module_id=slug(driver name),
+device_slug=slug(group), data_type=telemetry.
 
 JWT / login API
   Same as Dashboard: POST /api/v2/login with JSON {"name":"admin","pass":"..."}.
@@ -38,7 +38,8 @@ import urllib.request
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
-DEFAULT_SITE = "quang-ninh"
+DEFAULT_PROVINCE = "quawaco"
+DEFAULT_DISTRICT = "hoanhbo"
 DEFAULT_DATA_TYPE = "telemetry"
 INVALID_TOPIC_CHARS = re.compile(r"[#+]")
 
@@ -53,16 +54,18 @@ def slug(s: str) -> str:
 
 def build_ioc_topic(
     *,
-    site: str,
+    province: str,
+    district: str,
     module_id: str,
     device_slug: str,
     data_type: str,
 ) -> str:
-    site_f = slug(site) if site else slug(DEFAULT_SITE)
+    province_f = slug(province) if province else slug(DEFAULT_PROVINCE)
+    district_f = slug(district) if district else slug(DEFAULT_DISTRICT)
     dt = slug(data_type) if data_type else DEFAULT_DATA_TYPE
     if not dt:
         dt = DEFAULT_DATA_TYPE
-    parts = ["ioc", site_f, module_id, device_slug, dt]
+    parts = ["/ioc", province_f, district_f, module_id, device_slug, dt]
     topic = "/".join(parts)
     if INVALID_TOPIC_CHARS.search(topic):
         raise ValueError(f"Topic contains invalid MQTT wildcard chars: {topic!r}")
@@ -167,47 +170,33 @@ def fetch_groups(base: str, token: str, node: str) -> List[str]:
     return names
 
 
-def module_map_for_drivers(driver_names: List[str]) -> Dict[str, str]:
-    sorted_names = sorted(driver_names)
-    m: Dict[str, str] = {}
-    for i, name in enumerate(sorted_names, start=1):
-        m[name] = f"mod-{i:02d}"
-    return m
-
-
 def build_entries(
     nodes: List[Dict[str, Any]],
     base: str,
     token: str,
-    site: str,
+    province: str,
+    district: str,
     data_type: str,
-    fail_on_overflow: bool,
 ) -> Tuple[List[SubscribeEntry], List[str]]:
     warnings: List[str] = []
-    names = [str(n["name"]) for n in nodes if n.get("name")]
-    mod_map = module_map_for_drivers(names)
-    if len(mod_map) > 12:
-        msg = (
-            f"Found {len(mod_map)} south drivers; ISA-95 plan referenced mod-01..mod-12 only. "
-            f"Module ids will continue as mod-13, mod-14, ..."
-        )
-        warnings.append(msg)
-        if fail_on_overflow:
-            raise SystemExit(msg)
 
     entries: List[SubscribeEntry] = []
     for n in sorted(nodes, key=lambda x: str(x.get("name", ""))):
         driver = str(n.get("name", ""))
         if not driver:
             continue
-        mid = mod_map[driver]
+        mid = slug(driver)
+        if not mid:
+            warnings.append(f"Skip empty module slug for driver {driver!r}")
+            continue
         for gname in fetch_groups(base, token, driver):
             dev = slug(gname)
             if not dev:
                 warnings.append(f"Skip empty slug for group {gname!r} on {driver!r}")
                 continue
             topic = build_ioc_topic(
-                site=site,
+                province=province,
+                district=district,
                 module_id=mid,
                 device_slug=dev,
                 data_type=data_type,
@@ -242,9 +231,9 @@ def run(args: argparse.Namespace) -> int:
         nodes,
         base,
         token,
-        site=args.site,
+        province=args.province,
+        district=args.district,
         data_type=args.data_type,
-        fail_on_overflow=args.fail_on_module_overflow,
     )
     for w in warnings:
         print(f"Warning: {w}", file=sys.stderr)
@@ -291,7 +280,7 @@ def main() -> int:
         description="Discover south nodes and groups, register ioc/... MQTT topics via Neuron API"
     )
     p.add_argument("--base-url", default="http://localhost:7001", help="Neuron API base")
-    p.add_argument("--app", default="mqtt_hoanhbo", help="North MQTT app name")
+    p.add_argument("--app", default="testmqtt", help="North MQTT app name")
     p.add_argument("--token", default="", help="Bearer JWT (skip login)")
     p.add_argument("--user", default="", help="Login name if no --token")
     p.add_argument(
@@ -299,7 +288,16 @@ def main() -> int:
         default=None,
         help="Login password (if omitted with --user, read from stdin)",
     )
-    p.add_argument("--site", default=DEFAULT_SITE, help=f"Site segment (default {DEFAULT_SITE})")
+    p.add_argument(
+        "--province",
+        default=DEFAULT_PROVINCE,
+        help=f"Province segment (default {DEFAULT_PROVINCE})",
+    )
+    p.add_argument(
+        "--district",
+        default=DEFAULT_DISTRICT,
+        help=f"District segment (default {DEFAULT_DISTRICT})",
+    )
     p.add_argument(
         "--data-type",
         default=DEFAULT_DATA_TYPE,
@@ -311,11 +309,6 @@ def main() -> int:
         "--plugin-filter",
         default="",
         help="Only drivers whose plugin name contains this substring (case-insensitive)",
-    )
-    p.add_argument(
-        "--fail-on-module-overflow",
-        action="store_true",
-        help="Exit with error if more than 12 south drivers (after sort)",
     )
     args = p.parse_args()
     if args.user and args.password is None:

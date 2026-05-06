@@ -98,7 +98,7 @@ setLang()
 
   .container {
     width: 768px;
-    height: 390px;
+    min-height: 420px;
   }
 
   $img-width: 360px;
@@ -113,7 +113,7 @@ setLang()
   .emqx-card.el-card .el-card__body {
     box-sizing: border-box;
     height: 100%;
-    padding: 64px 64px 61px;
+    padding: 52px 64px 44px;
   }
 
   img {
@@ -129,14 +129,14 @@ setLang()
   }
 
   .img-logo {
-    margin: 0 auto 46px;
+    margin: 0 auto 26px;
     width: auto;
-    max-width: 220px;
-    max-height: 120px;
+    max-width: 170px;
+    max-height: 90px;
     object-fit: contain;
   }
   .emqx-form-item {
-    margin-bottom: 30px;
+    margin-bottom: 22px;
   }
   /*
     给的页面里面，除了license，用户管理和关于之外，其他的都已经写了
@@ -171,7 +171,34 @@ setLang()
   .emqx-button {
     display: block;
     width: 100%;
-    margin-top: 40px;
+    margin-top: 22px;
+  }
+}
+
+@media (max-height: 760px) {
+  .login-page {
+    .container {
+      min-height: 390px;
+    }
+
+    .emqx-card.el-card .el-card__body {
+      padding-top: 40px;
+      padding-bottom: 30px;
+    }
+
+    .img-logo {
+      max-width: 150px;
+      max-height: 80px;
+      margin-bottom: 14px;
+    }
+
+    .emqx-form-item {
+      margin-bottom: 16px;
+    }
+
+    .emqx-button {
+      margin-top: 14px;
+    }
   }
 }
 </style>

@@ -1,14 +1,23 @@
 # ARM64-focused Neuron image for Raspberry Pi CM4 class devices.
+# Web UI is built from ./neuron-dashboard (same as root Dockerfile), not the release zip.
 # Build example:
 #   docker buildx build --platform linux/arm64 -f Dockerfile.cm4 -t neuron:cm4 --load .
 # Run example:
 #   docker run --rm -p 7000:7000 neuron:cm4
 
+FROM node:18-bookworm AS dashboard
+WORKDIR /app
+COPY neuron-dashboard/package.json neuron-dashboard/yarn.lock ./
+ENV NODE_OPTIONS=--openssl-legacy-provider
+RUN yarn install --frozen-lockfile --network-timeout 300000
+COPY neuron-dashboard/ .
+RUN yarn build
+
 FROM ubuntu:22.04 AS builder
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update -qq && apt-get install -y -qq \
-    build-essential cmake git pkg-config ca-certificates wget unzip curl python3 \
+    build-essential cmake git pkg-config ca-certificates curl python3 \
     libssl-dev libxml2-dev libmbedtls-dev libsqlite3-dev \
     libprotobuf-c-dev librdkafka-dev zlib1g-dev && \
     rm -rf /var/lib/apt/lists/*
@@ -84,17 +93,13 @@ RUN rm -rf build-docker-cm4 && mkdir -p build-docker-cm4 && cd build-docker-cm4 
       -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF && \
     cmake --build . -j2
 
-# Required dashboard static bundle for / and /web routes.
-RUN cd /workspace/build-docker-cm4 && \
-    wget -q https://github.com/emqx/neuron-dashboard/releases/download/2.6.3/neuron-dashboard.zip -O /tmp/neuron-dashboard.zip && \
-    unzip -q -o /tmp/neuron-dashboard.zip -d . && \
-    rm /tmp/neuron-dashboard.zip
+COPY --from=dashboard /app/dist /workspace/build-docker-cm4/dist
 
 FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update -qq && apt-get install -y -qq \
-    ca-certificates libssl3 libxml2 libsqlite3-0 \
+    ca-certificates wget libssl3 libxml2 libsqlite3-0 \
     libmbedcrypto7 libmbedtls14 libmbedx509-1 libprotobuf-c1 \
     librdkafka1 && \
     rm -rf /var/lib/apt/lists/*

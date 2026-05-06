@@ -92,6 +92,8 @@ import { EmqxMessage } from '@emqx/emqx-ui'
 import { useI18n } from 'vue-i18n'
 import useLang from '@/composables/useLang'
 
+const isNotFoundError = (error: unknown) => (error as { response?: { status?: number } })?.response?.status === 404
+
 const { t, locale } = useI18n()
 const isDataLoading = ref(false)
 const licenseData: Ref<License | undefined> = ref(undefined)
@@ -130,7 +132,10 @@ const getLicense = async () => {
       tagsUsage,
     }
   } catch (error) {
-    console.error(error)
+    // Ignore when license endpoint is not provided by environment profile.
+    if (!isNotFoundError(error)) {
+      console.error(error)
+    }
   } finally {
     isDataLoading.value = false
   }

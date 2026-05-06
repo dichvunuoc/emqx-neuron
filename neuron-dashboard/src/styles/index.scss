@@ -1,3 +1,4 @@
+@import './fonts-roboto.scss';
 @import  './emqx-ui-variables.scss';
 @import  './colors.scss';
 
@@ -6,6 +7,10 @@
 @import  './base.scss';
 @import  './mixins.scss';
 
+/* Roboto first. System UI before PingFang/Source Han: CJK fonts early in the stack can “steal”
+   Vietnamese diacritics and fall back to a serif font per-glyph (mixed “ransom note” look). */
+$neuron-font-stack: 'Roboto', system-ui, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial,
+  'PingFang SC', 'Source Han Sans CN', sans-serif;
 
 :root {
   --color-main-bg: #f4f9fc;
@@ -23,7 +28,7 @@
 }
 
 #neuron-dashboard {
-  font-family: 'PingFang SC', 'Source Han Sans CN';
+  font-family: $neuron-font-stack;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color: #2c3e50;
@@ -62,6 +67,10 @@ td {
 body {
   background-color: #f4f9fc;
   font-size: 14px;
+  /* Teleported Element Plus (dropdown, dialog, tooltip) mounts on body — must match app font */
+  font-family: $neuron-font-stack;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 label {
@@ -159,6 +168,15 @@ label {
   .el-menu {
     background-color: transparent;
   }
+}
+
+/* Sidebar: emqx-menu / Element may set a different stack — keep Vietnamese + Latin on Roboto */
+.side-nav.el-menu-vertical-demo,
+.side-nav.el-menu-vertical-demo .el-menu,
+.side-nav.el-menu-vertical-demo .el-menu-item,
+.side-nav.el-menu-vertical-demo .el-submenu__title,
+.side-nav.el-menu-vertical-demo .nav-label {
+  font-family: $neuron-font-stack !important;
 }
 
 .icon-svg {

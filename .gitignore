@@ -21,3 +21,6 @@ log.html
 output.xml
 report.html
 *.cache
+
+# Core dumps / local native build debris (GitHub 100MB limit)
+build-native-cm4/core

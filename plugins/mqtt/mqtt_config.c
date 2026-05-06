@@ -321,6 +321,24 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
         .v.val_bool = true,
         .attribute  = NEU_JSON_ATTRIBUTE_OPTIONAL,
     };
+    neu_json_elem_t full_table_on_change = {
+        .name       = "full-table-on-change",
+        .t          = NEU_JSON_BOOL,
+        .v.val_bool = false,
+        .attribute  = NEU_JSON_ATTRIBUTE_OPTIONAL,
+    };
+    neu_json_elem_t compare_by_rounded_float = {
+        .name       = "compare-by-rounded-float",
+        .t          = NEU_JSON_BOOL,
+        .v.val_bool = true,
+        .attribute  = NEU_JSON_ATTRIBUTE_OPTIONAL,
+    };
+    neu_json_elem_t float_round_digits = {
+        .name      = "float-round-digits",
+        .t         = NEU_JSON_INT,
+        .v.val_int = 2,
+        .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
+    };
 
     if (NULL == setting || NULL == config) {
         plog_error(plugin, "invalid argument, null pointer");
@@ -462,6 +480,23 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
     if (0 != ret) {
         plog_notice(plugin, "setting upload_err failed");
     }
+    ret = neu_parse_param(setting, NULL, 1, &full_table_on_change);
+    if (0 != ret) {
+        plog_notice(plugin, "setting full-table-on-change failed");
+    }
+    ret = neu_parse_param(setting, NULL, 1, &compare_by_rounded_float);
+    if (0 != ret) {
+        plog_notice(plugin, "setting compare-by-rounded-float failed");
+    }
+    ret = neu_parse_param(setting, NULL, 1, &float_round_digits);
+    if (0 != ret) {
+        plog_notice(plugin, "setting float-round-digits failed");
+    }
+    if (float_round_digits.v.val_int < 0 || float_round_digits.v.val_int > 8) {
+        plog_error(plugin, "setting invalid float-round-digits: %" PRIi64,
+                   float_round_digits.v.val_int);
+        goto error;
+    }
 
     config->version             = version.v.val_int;
     config->client_id           = client_id.v.val_str;
@@ -484,6 +519,9 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
     config->key                 = key.v.val_str;
     config->keypass             = keypass.v.val_str;
     config->upload_drv_state    = upload_drv_state.v.val_bool;
+    config->full_table_on_change = full_table_on_change.v.val_bool;
+    config->compare_by_rounded_float = compare_by_rounded_float.v.val_bool;
+    config->float_round_digits       = (uint8_t) float_round_digits.v.val_int;
     config->heartbeat_topic     = upload_drv_state_topic.v.val_str;
     config->heartbeat_interval  = upload_drv_state_interval.v.val_int;
     config->upload_err          = upload_err.v.val_bool;
@@ -504,6 +542,12 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
     plog_notice(plugin, "config upload-drv-state: %d",
                 config->upload_drv_state);
     plog_notice(plugin, "config upload-err: %d", config->upload_err);
+    plog_notice(plugin, "config full-table-on-change: %d",
+                config->full_table_on_change);
+    plog_notice(plugin, "config compare-by-rounded-float: %d",
+                config->compare_by_rounded_float);
+    plog_notice(plugin, "config float-round-digits: %u",
+                config->float_round_digits);
     if (config->upload_drv_state) {
         if (config->heartbeat_topic) {
             plog_notice(plugin, "config upload-drv-state-topic: %s",

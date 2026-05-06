@@ -10,6 +10,8 @@ import { useTemplateForm } from '@/composables/config/useTemplateDialog'
 import { useDownload } from '@/composables/useDownload'
 import { dataType, isJSONData } from '@/utils/utils'
 
+const isNotFoundError = (error: unknown) => (error as { response?: { status?: number } })?.response?.status === 404
+
 export const useTemplateListMap = () => {
   const templateListMap: Ref<Array<RawTemplateData>> = ref([])
 
@@ -18,6 +20,11 @@ export const useTemplateListMap = () => {
       templateListMap.value = await queryTemplateList()
       return Promise.resolve(templateListMap.value)
     } catch (error) {
+      // Some simulation environments do not expose template APIs.
+      if (isNotFoundError(error)) {
+        templateListMap.value = []
+        return Promise.resolve(templateListMap.value)
+      }
       return Promise.reject(error)
     }
   }

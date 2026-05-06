@@ -4,6 +4,8 @@ import { queryLicense } from '@/api/admin'
 import type { License } from '@/types/admin'
 import Cookies from 'js-cookie'
 
+const isNotFoundError = (error: unknown) => (error as { response?: { status?: number } })?.response?.status === 404
+
 export default () => {
   // currently unused
   const licenseData: Ref<License | undefined> = ref(undefined)
@@ -51,7 +53,10 @@ export default () => {
         }
       }
     } catch (error) {
-      console.error(error)
+      // License API can be unavailable in local/sim profiles.
+      if (!isNotFoundError(error)) {
+        console.error(error)
+      }
     }
   }
 

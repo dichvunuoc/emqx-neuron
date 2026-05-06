@@ -18,6 +18,7 @@
  **/
 
 #include "connection/mqtt_client.h"
+#include <math.h>
 #include "errcodes.h"
 #include "otel/otel_manager.h"
 #include "utils/asprintf.h"
@@ -94,6 +95,192 @@ static int tag_values_to_json(UT_array *tags, mqtt_static_vt_t *s_tags,
         }
     }
 
+    return 0;
+}
+
+static double round_to_digits(double value, uint8_t digits)
+{
+    double scale = pow(10.0, digits);
+    return round(value * scale) / scale;
+}
+
+static mqtt_snapshot_group_t *get_or_create_snapshot_group(neu_plugin_t *plugin,
+                                                            const char *driver,
+                                                            const char *group)
+{
+    route_key_t key = { 0 };
+    strncpy(key.driver, driver, sizeof(key.driver));
+    strncpy(key.group, group, sizeof(key.group));
+
+    mqtt_snapshot_group_t *snapshot = NULL;
+    HASH_FIND(hh, plugin->snapshot_tbl, &key, sizeof(key), snapshot);
+    if (snapshot != NULL) {
+        return snapshot;
+    }
+
+    snapshot = calloc(1, sizeof(*snapshot));
+    if (snapshot == NULL) {
+        return NULL;
+    }
+    snapshot->key = key;
+    HASH_ADD(hh, plugin->snapshot_tbl, key, sizeof(snapshot->key), snapshot);
+    return snapshot;
+}
+
+static bool snapshot_tag_value_equal(const mqtt_snapshot_tag_t *cached,
+                                     const neu_json_read_resp_tag_t *incoming)
+{
+    if (cached->error != incoming->error || cached->t != incoming->t) {
+        return false;
+    }
+
+    switch (incoming->t) {
+    case NEU_JSON_INT:
+    case NEU_JSON_BIT:
+        return cached->value.val_int == incoming->value.val_int;
+    case NEU_JSON_FLOAT:
+        return cached->value.val_float == incoming->value.val_float;
+    case NEU_JSON_DOUBLE:
+        return cached->value.val_double == incoming->value.val_double;
+    case NEU_JSON_BOOL:
+        return cached->value.val_bool == incoming->value.val_bool;
+    case NEU_JSON_STR:
+        if (cached->value.val_str == NULL || incoming->value.val_str == NULL) {
+            return cached->value.val_str == incoming->value.val_str;
+        }
+        return strcmp(cached->value.val_str, incoming->value.val_str) == 0;
+    default:
+        return false;
+    }
+}
+
+static int snapshot_upsert_tag(mqtt_snapshot_group_t *snapshot,
+                               neu_json_read_resp_tag_t *incoming)
+{
+    mqtt_snapshot_tag_t *cached = NULL;
+    HASH_FIND_STR(snapshot->tags, incoming->name, cached);
+
+    if (cached == NULL) {
+        cached = calloc(1, sizeof(*cached));
+        if (cached == NULL) {
+            return -1;
+        }
+        cached->name = strdup(incoming->name);
+        if (cached->name == NULL) {
+            free(cached);
+            return -1;
+        }
+        HASH_ADD_KEYPTR(hh, snapshot->tags, cached->name, strlen(cached->name),
+                        cached);
+    } else if (cached->t == NEU_JSON_STR && cached->value.val_str != NULL) {
+        free(cached->value.val_str);
+        cached->value.val_str = NULL;
+    }
+
+    cached->error     = incoming->error;
+    cached->t         = incoming->t;
+    cached->precision = incoming->precision;
+    cached->bias      = incoming->datatag.bias;
+
+    switch (incoming->t) {
+    case NEU_JSON_INT:
+    case NEU_JSON_BIT:
+        cached->value.val_int = incoming->value.val_int;
+        break;
+    case NEU_JSON_FLOAT:
+        cached->value.val_float = incoming->value.val_float;
+        break;
+    case NEU_JSON_DOUBLE:
+        cached->value.val_double = incoming->value.val_double;
+        break;
+    case NEU_JSON_BOOL:
+        cached->value.val_bool = incoming->value.val_bool;
+        break;
+    case NEU_JSON_STR:
+        cached->value.val_str =
+            incoming->value.val_str ? strdup(incoming->value.val_str) : NULL;
+        if (incoming->value.val_str != NULL && cached->value.val_str == NULL) {
+            return -1;
+        }
+        break;
+    default:
+        return -1;
+    }
+
+    return 0;
+}
+
+static int build_snapshot_json(neu_plugin_t *plugin, neu_reqresp_trans_data_t *data,
+                               mqtt_upload_format_e format, mqtt_static_vt_t *s_tags,
+                               size_t n_s_tags, char **json_str, bool *skip)
+{
+    neu_json_read_periodic_t header = { .group     = (char *) data->group,
+                                        .node      = (char *) data->driver,
+                                        .timestamp = global_timestamp };
+    neu_json_read_resp_t json = { 0 };
+    route_key_t          key  = { 0 };
+    strncpy(key.driver, data->driver, sizeof(key.driver));
+    strncpy(key.group, data->group, sizeof(key.group));
+
+    mqtt_snapshot_group_t *snapshot = NULL;
+    HASH_FIND(hh, plugin->snapshot_tbl, &key, sizeof(key), snapshot);
+    if (snapshot == NULL || snapshot->tags == NULL) {
+        if (skip != NULL) {
+            *skip = true;
+        }
+        return 0;
+    }
+
+    int n_cached = HASH_COUNT(snapshot->tags);
+    json.n_tag   = n_cached + n_s_tags;
+    json.tags = calloc(json.n_tag, sizeof(neu_json_read_resp_tag_t));
+    if (json.tags == NULL) {
+        return -1;
+    }
+
+    int index = 0;
+    mqtt_snapshot_tag_t *tag = NULL, *tmp = NULL;
+    HASH_ITER(hh, snapshot->tags, tag, tmp)
+    {
+        if (!plugin->config.upload_err && tag->error != 0) {
+            continue;
+        }
+        json.tags[index].name      = tag->name;
+        json.tags[index].error     = tag->error;
+        json.tags[index].t         = tag->t;
+        json.tags[index].value     = tag->value;
+        json.tags[index].precision = tag->precision;
+        json.tags[index].datatag.bias = tag->bias;
+        index += 1;
+    }
+    for (size_t i = 0; i < n_s_tags; i++) {
+        json.tags[index].name  = s_tags[i].name;
+        json.tags[index].t     = s_tags[i].jtype;
+        json.tags[index].value = s_tags[i].jvalue;
+        index += 1;
+    }
+    json.n_tag = index;
+
+    if (json.n_tag == 0) {
+        free(json.tags);
+        if (skip != NULL) {
+            *skip = true;
+        }
+        return 0;
+    }
+
+    if (format == MQTT_UPLOAD_FORMAT_VALUES) {
+        neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp1, &header,
+                                  neu_json_encode_read_periodic_resp, json_str);
+    } else if (format == MQTT_UPLOAD_FORMAT_TAGS) {
+        neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp2, &header,
+                                  neu_json_encode_read_periodic_resp, json_str);
+    } else {
+        free(json.tags);
+        return -1;
+    }
+
+    free(json.tags);
     return 0;
 }
 
@@ -1487,10 +1674,75 @@ int handle_trans_data(neu_plugin_t *            plugin,
             }
             free(data_report.tags);
         } else {
-            json_str = generate_upload_json(
-                plugin, trans_data, plugin->config.format,
-                plugin->config.schema_vts, plugin->config.n_schema_vt,
-                static_tags, n_satic_tag, &skip_none);
+            bool use_snapshot_publish =
+                plugin->config.full_table_on_change &&
+                (plugin->config.format == MQTT_UPLOAD_FORMAT_VALUES ||
+                 plugin->config.format == MQTT_UPLOAD_FORMAT_TAGS);
+            if (use_snapshot_publish) {
+                mqtt_snapshot_group_t *snapshot = get_or_create_snapshot_group(
+                    plugin, trans_data->driver, trans_data->group);
+                if (snapshot == NULL) {
+                    rv = NEU_ERR_EINTERNAL;
+                    break;
+                }
+
+                bool any_changed = false;
+                utarray_foreach(trans_data->tags, neu_resp_tag_value_meta_t *,
+                                tag_value)
+                {
+                    neu_json_read_resp_tag_t json_tag = { 0 };
+                    neu_tag_value_to_json(tag_value, &json_tag);
+                    if (plugin->config.compare_by_rounded_float &&
+                        json_tag.error == 0) {
+                        if (json_tag.t == NEU_JSON_FLOAT) {
+                            json_tag.value.val_float = (float) round_to_digits(
+                                json_tag.value.val_float,
+                                plugin->config.float_round_digits);
+                        } else if (json_tag.t == NEU_JSON_DOUBLE) {
+                            json_tag.value.val_double = round_to_digits(
+                                json_tag.value.val_double,
+                                plugin->config.float_round_digits);
+                        }
+                    }
+
+                    mqtt_snapshot_tag_t *cached = NULL;
+                    HASH_FIND_STR(snapshot->tags, json_tag.name, cached);
+                    if (cached == NULL ||
+                        !snapshot_tag_value_equal(cached, &json_tag)) {
+                        any_changed = true;
+                    }
+
+                    if (0 != snapshot_upsert_tag(snapshot, &json_tag)) {
+                        if (json_tag.n_meta > 0) {
+                            free(json_tag.metas);
+                        }
+                        rv = NEU_ERR_EINTERNAL;
+                        break;
+                    }
+
+                    if (json_tag.n_meta > 0) {
+                        free(json_tag.metas);
+                    }
+                }
+                if (rv != 0) {
+                    break;
+                }
+
+                if (!any_changed) {
+                    skip_none = true;
+                } else if (0 != build_snapshot_json(
+                                    plugin, trans_data, plugin->config.format,
+                                    static_tags, n_satic_tag, &json_str,
+                                    &skip_none)) {
+                    rv = NEU_ERR_EINTERNAL;
+                    break;
+                }
+            } else {
+                json_str = generate_upload_json(
+                    plugin, trans_data, plugin->config.format,
+                    plugin->config.schema_vts, plugin->config.n_schema_vt,
+                    static_tags, n_satic_tag, &skip_none);
+            }
             if (json_str != NULL) {
                 size = strlen(json_str);
             }
@@ -1615,6 +1867,8 @@ int handle_unsubscribe_group(neu_plugin_t *         plugin,
                              neu_req_unsubscribe_t *unsub_info)
 {
     route_tbl_del(&plugin->route_tbl, unsub_info->driver, unsub_info->group);
+    snapshot_tbl_del(&plugin->snapshot_tbl, unsub_info->driver,
+                     unsub_info->group);
     plog_notice(plugin, "del route driver:%s group:%s", unsub_info->driver,
                 unsub_info->group);
     return 0;
@@ -1623,6 +1877,7 @@ int handle_unsubscribe_group(neu_plugin_t *         plugin,
 int handle_del_group(neu_plugin_t *plugin, neu_req_del_group_t *req)
 {
     route_tbl_del(&plugin->route_tbl, req->driver, req->group);
+    snapshot_tbl_del(&plugin->snapshot_tbl, req->driver, req->group);
     plog_notice(plugin, "del route driver:%s group:%s", req->driver,
                 req->group);
     return 0;
@@ -1632,6 +1887,8 @@ int handle_update_group(neu_plugin_t *plugin, neu_req_update_group_t *req)
 {
     route_tbl_update_group(&plugin->route_tbl, req->driver, req->group,
                            req->new_name);
+    snapshot_tbl_update_group(&plugin->snapshot_tbl, req->driver, req->group,
+                              req->new_name);
     plog_notice(plugin, "update route driver:%s group:%s to %s", req->driver,
                 req->group, req->new_name);
     return 0;
@@ -1640,6 +1897,7 @@ int handle_update_group(neu_plugin_t *plugin, neu_req_update_group_t *req)
 int handle_update_driver(neu_plugin_t *plugin, neu_req_update_node_t *req)
 {
     route_tbl_update_driver(&plugin->route_tbl, req->node, req->new_name);
+    snapshot_tbl_update_driver(&plugin->snapshot_tbl, req->node, req->new_name);
     plog_notice(plugin, "update route driver:%s to %s", req->node,
                 req->new_name);
     return 0;
@@ -1648,6 +1906,7 @@ int handle_update_driver(neu_plugin_t *plugin, neu_req_update_node_t *req)
 int handle_del_driver(neu_plugin_t *plugin, neu_reqresp_node_deleted_t *req)
 {
     route_tbl_del_driver(&plugin->route_tbl, req->node);
+    snapshot_tbl_del_driver(&plugin->snapshot_tbl, req->node);
     plog_notice(plugin, "delete route driver:%s", req->node);
     return 0;
 }

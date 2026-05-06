@@ -166,7 +166,7 @@ cd /opt/neuron
 git clone <your-neuron-repo> neuron-src
 cd neuron-src
 cp deploy/cm4/.env.example deploy/cm4/.env
-mkdir -p deploy/cm4/data/{config,logs,persistence,dist}
+mkdir -p deploy/cm4/data/{config,logs,persistence}
 ```
 
 Adjust `deploy/cm4/.env` for your image/tag and timezone.

@@ -106,6 +106,9 @@ typedef struct {
     mqtt_driver_topic_t driver_topic;
 
     bool     upload_err;          // Upload tag error code flag
+    bool     full_table_on_change; // publish full group when any tag changes
+    bool compare_by_rounded_float; // compare float after rounding
+    uint8_t float_round_digits;    // digits used for float rounding
     bool     upload_drv_state;    // upload driver state flag
     char *   heartbeat_topic;     // upload driver state topic
     uint16_t heartbeat_interval;  // upload driver state interval

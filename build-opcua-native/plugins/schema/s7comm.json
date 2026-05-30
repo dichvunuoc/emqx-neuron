@@ -1,0 +1,150 @@
+{
+  "group_interval": 1000,
+  "tag_regex": [
+    {
+      "type": 11,
+      "regex": "^[IQFM][0-9]+\\.[0-7]$|^[IQFM][0-9]+\\.[0-9]+$|^DB[0-9]+\\.DBW[0-9]+\\.[0-7]$"
+    },
+    {
+      "type": 3,
+      "regex": "^[IQFM][0-9]+$|^DB[0-9]+\\.DBW[0-9]+$"
+    },
+    {
+      "type": 4,
+      "regex": "^[IQFM][0-9]+$|^DB[0-9]+\\.DBW[0-9]+$"
+    },
+    {
+      "type": 5,
+      "regex": "^[T][0-9]+$|^DB[0-9]+\\.DBW[0-9]+$"
+    },
+    {
+      "type": 6,
+      "regex": "^[T][0-9]+$|^DB[0-9]+\\.DBW[0-9]+$"
+    },
+    {
+      "type": 9,
+      "regex": "^[IQFM][0-9]+$|^DB[0-9]+\\.DBW[0-9]+$"
+    },
+    {
+      "type": 10,
+      "regex": "^DB[0-9]+\\.DBW[0-9]+$"
+    },
+    {
+      "type": 13,
+      "regex": "^DB[0-9]+\\.DBW[0-9]+\\.[0-9]+(D?)$"
+    },
+    {
+      "type": 22,
+      "regex": "^DB[0-9]+\\.DBW[0-9]+\\.[0-9]+$"
+    }
+  ],
+  "host": {
+    "name": "PLC IP Address",
+    "name_zh": "PLC IP 地址",
+    "attribute": "required",
+    "type": "string",
+    "default": "192.168.0.1"
+  },
+  "port": {
+    "name": "PLC Port",
+    "name_zh": "PLC 端口",
+    "attribute": "required",
+    "type": "int",
+    "default": 102,
+    "valid": { "min": 1, "max": 65535 }
+  },
+  "pdu_size": {
+    "name": "PDU Size",
+    "name_zh": "PDU 大小",
+    "attribute": "required",
+    "type": "int",
+    "default": 960,
+    "valid": { "min": 240, "max": 960 }
+  },
+  "plc_type": {
+    "name": "PLC Module",
+    "name_zh": "PLC 型号",
+    "attribute": "required",
+    "type": "map",
+    "default": 3,
+    "valid": {
+      "map": [
+        { "key": "S7-200", "value": 0 },
+        { "key": "S7-300", "value": 1 },
+        { "key": "S7-400", "value": 2 },
+        { "key": "S7-1200", "value": 3 },
+        { "key": "S7-1500", "value": 4 }
+      ]
+    }
+  },
+  "connection_type": {
+    "name": "Connection Type",
+    "name_zh": "连接类型",
+    "attribute": "required",
+    "type": "map",
+    "default": 1,
+    "valid": {
+      "map": [
+        { "key": "PG", "value": 1 },
+        { "key": "OP", "value": 2 },
+        { "key": "S7 Basic", "value": 3 }
+      ]
+    }
+  },
+  "rack": {
+    "name": "CPU Rack",
+    "name_zh": "CPU 机架号",
+    "attribute": "required",
+    "type": "int",
+    "default": 0,
+    "valid": { "min": 0, "max": 7 }
+  },
+  "slot": {
+    "name": "CPU Slot",
+    "name_zh": "CPU 槽号",
+    "attribute": "required",
+    "type": "int",
+    "default": 1,
+    "valid": { "min": 0, "max": 31 }
+  },
+  "local_tsap": {
+    "name": "Local TSAP",
+    "name_zh": "本地 TSAP",
+    "attribute": "optional",
+    "type": "int",
+    "default": 256,
+    "condition": { "field": "plc_type", "value": 0 }
+  },
+  "remote_tsap": {
+    "name": "Remote TSAP",
+    "name_zh": "远程 TSAP",
+    "attribute": "optional",
+    "type": "int",
+    "default": 257,
+    "condition": { "field": "plc_type", "value": 0 }
+  },
+  "t1": {
+    "name": "Write batch size",
+    "name_zh": "写请求批大小",
+    "attribute": "optional",
+    "type": "int",
+    "default": 1,
+    "valid": { "min": 1, "max": 20 }
+  },
+  "t2": {
+    "name": "Delay after send (ms)",
+    "name_zh": "发送后等待 (ms)",
+    "attribute": "optional",
+    "type": "int",
+    "default": 0,
+    "valid": { "min": 0, "max": 10000 }
+  },
+  "t3": {
+    "name": "Read batch size",
+    "name_zh": "读请求批大小",
+    "attribute": "optional",
+    "type": "int",
+    "default": 20,
+    "valid": { "min": 1, "max": 20 }
+  }
+}

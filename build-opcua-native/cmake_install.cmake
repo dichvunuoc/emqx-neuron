@@ -84,6 +84,7 @@ if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
   include("/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/plugins/modbus/cmake_install.cmake")
   include("/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/plugins/opcua/cmake_install.cmake")
+  include("/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/plugins/s7/cmake_install.cmake")
   include("/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/plugins/mqtt/cmake_install.cmake")
   include("/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/plugins/ekuiper/cmake_install.cmake")
   include("/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/plugins/file/cmake_install.cmake")

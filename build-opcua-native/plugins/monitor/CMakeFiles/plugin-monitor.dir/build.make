@@ -130,6 +130,7 @@ plugins/libplugin-monitor.dylib: plugins/monitor/CMakeFiles/plugin-monitor.dir/b
 plugins/libplugin-monitor.dylib: libneuron-base.dylib
 plugins/libplugin-monitor.dylib: /opt/homebrew/Cellar/openssl@3/3.6.2/lib/libssl.a
 plugins/libplugin-monitor.dylib: /opt/homebrew/Cellar/openssl@3/3.6.2/lib/libcrypto.a
+plugins/libplugin-monitor.dylib: /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/lib/libxml2.tbd
 plugins/libplugin-monitor.dylib: plugins/monitor/CMakeFiles/plugin-monitor.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Linking C shared library ../libplugin-monitor.dylib"
 	cd /Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/plugins/monitor && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/plugin-monitor.dir/link.txt --verbose=$(VERBOSE)

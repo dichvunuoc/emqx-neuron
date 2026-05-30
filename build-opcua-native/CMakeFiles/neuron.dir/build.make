@@ -656,8 +656,10 @@ neuron: CMakeFiles/neuron.dir/plugins/restful/simulator_handle.c.o
 neuron: CMakeFiles/neuron.dir/simulator/modbus_tcp_simulator.c.o
 neuron: CMakeFiles/neuron.dir/build.make
 neuron: libneuron-base.dylib
+neuron: /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/lib/libxml2.tbd
 neuron: /opt/homebrew/Cellar/openssl@3/3.6.2/lib/libssl.a
 neuron: /opt/homebrew/Cellar/openssl@3/3.6.2/lib/libcrypto.a
+neuron: /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/lib/libxml2.tbd
 neuron: CMakeFiles/neuron.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/CMakeFiles --progress-num=$(CMAKE_PROGRESS_37) "Linking C executable neuron"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/neuron.dir/link.txt --verbose=$(VERBOSE)

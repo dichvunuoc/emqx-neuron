@@ -817,6 +817,7 @@ libneuron-base.dylib: CMakeFiles/neuron-base.dir/src/otel/trace.pb-c.c.o
 libneuron-base.dylib: CMakeFiles/neuron-base.dir/build.make
 libneuron-base.dylib: /opt/homebrew/Cellar/openssl@3/3.6.2/lib/libssl.a
 libneuron-base.dylib: /opt/homebrew/Cellar/openssl@3/3.6.2/lib/libcrypto.a
+libneuron-base.dylib: /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/lib/libxml2.tbd
 libneuron-base.dylib: CMakeFiles/neuron-base.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/CMakeFiles --progress-num=$(CMAKE_PROGRESS_47) "Linking C shared library libneuron-base.dylib"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/neuron-base.dir/link.txt --verbose=$(VERBOSE)

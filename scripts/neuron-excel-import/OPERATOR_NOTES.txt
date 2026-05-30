@@ -20,6 +20,27 @@ The MQTT north plugin applies one QoS level to telemetry publishes for the whole
 node. Per-topic QoS (e.g. control=1, telemetry=0) or MQTT retain for status
 typically requires a second north app, EMQX rules, or another bridge.
 
+Full Table On Change (full-table-on-change)
+-------------------------------------------
+When enabled, each publish includes all tags in the subscribed group (Values,
+Tags, Custom, or ECP format — not Protobuf). The north app reads the full group
+from the south driver cache (same source as Dashboard) before each MQTT publish,
+so tag values match the UI and stale partial snapshots are avoided.
+
+Operational workarounds before/without this fix:
+- Turn off Full Table On Change and merge delta messages on the consumer, or
+- Periodically restart the north MQTT app (only a temporary mitigation).
+
+After subscribe, an initial full-table message is published when the option is on.
+
+Verification (smoke / long-run)
+-------------------------------
+1. North MQTT: enable full-table-on-change; format Values or Tags or Custom.
+2. Subscribe a group with many tags; confirm the first MQTT payload has all tags.
+3. Let only one tag change for 30+ minutes; each payload must still list every
+   tag with current values (compare to Dashboard or GET tag read for that group).
+4. Restarting north must not be required for correctness.
+
 JWT / login (get token for API scripts)
 ---------------------------------------
 POST /api/v2/login with JSON body {"name":"...","pass":"..."}; the response contains

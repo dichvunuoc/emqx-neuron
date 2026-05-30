@@ -18,9 +18,49 @@ PLATFORM=linux/arm64 NEURON_DOCKERFILE=Dockerfile.cm4 \
 ./scripts/minipc-mac-ssh-deploy.sh --ssh pi@192.168.1.50
 ```
 
+- Bản **1 lệnh có hỏi tài khoản SSH** (host/user), phù hợp khi chưa setup alias:
+
+```bash
+chmod +x scripts/minipc-onecmd-install.sh
+./scripts/minipc-onecmd-install.sh
+```
+
+Script sẽ:
+- hỏi `host` + `username` nếu bạn chưa truyền qua `--ssh`;
+- dùng sẵn `neuron-stack-cm4.tar` nếu có, thiếu thì tự build ARM64;
+- nếu chưa có SSH key thì `scp/ssh` sẽ hiện prompt để bạn nhập mật khẩu.
+
 - Cần **SSH bằng key** tới mini PC (`ssh-copy-id`), hoặc nhập mật khẩu khi `scp`/`ssh` hỏi.
 - Đã build sẵn trên Mac: `BUILD=0` cùng `STACK_*`, hoặc `--no-build --tar ./neuron-stack-cm4.tar`.
 - Chi tiết: [scripts/minipc-mac-ssh-deploy.sh](../../scripts/minipc-mac-ssh-deploy.sh).
+
+## Gói bundle — cài lặp lại trên nhiều mini PC (USB / scp, có thể offline)
+
+Trên **máy build** (Mac/CI), trong repo:
+
+```bash
+chmod +x scripts/minipc-bundle-pack.sh
+
+# Build ARM64 + đóng gói compose + script + neuron-stack-*.tar vào dist/
+STACK_REGISTRY=local/neuron STACK_TAG=cm4 \
+PLATFORM=linux/arm64 NEURON_DOCKERFILE=Dockerfile.cm4 \
+./scripts/minipc-bundle-pack.sh
+```
+
+- Kết quả: `dist/neuron-minipc-bundle-cm4/` gồm `docker-compose.yml`, `nginx.conf`, `.env.example`, `install-minipc-docker.sh`, `minipc-cm4-edge.sh`, `mqtt-fulltable-warmup.py`, `INSTALL.txt`, và `neuron-stack-cm4.tar` (hai image).
+- Chỉ gói file cấu hình + script **không** build image: `INCLUDE_TAR=0 ./scripts/minipc-bundle-pack.sh` (tự chép file `.tar` vào thư mục bundle trước khi mang đi).
+- Nén một file: `COMPRESS=1 ./scripts/minipc-bundle-pack.sh` → `dist/neuron-minipc-bundle-<tag>.tar.gz`.
+
+Trên **mini PC**: copy cả thư mục (hoặc giải nén `.tar.gz`), làm theo `INSTALL.txt` — tóm tắt:
+
+```bash
+cd ~/neuron-minipc-bundle-cm4
+export STACK_IMAGE_TAR="$PWD/neuron-stack-cm4.tar"   # nếu offline
+export STACK_REGISTRY=local/neuron STACK_TAG=cm4
+sudo -E bash ./install-minipc-docker.sh --bundle-dir "$PWD"
+```
+
+`--bundle-dir` / `MINIPC_BUNDLE_DIR` khiến installer **không** cần `curl` từ GitHub cho compose; nếu có `STACK_IMAGE_TAR` thì **bỏ qua** `docker pull` mặc định.
 
 ## 1) Build và push (máy dev / CI) — một lệnh
 
@@ -94,12 +134,17 @@ sudo ./minipc-cm4-edge.sh install
 
 **Cập nhật:** `sudo ./minipc-cm4-edge.sh update` (sửa `.env` nếu đổi tag).
 
+## Siemens S7 (Snap7)
+
+Southbound plugins `libplugin-s7comm.so` and `libplugin-s7comm_for_300.so` require **libsnap7** in the Neuron image or on the host (`plugins/` directory). Build Snap7 for your CPU arch (see [Install-dependencies.md](../../Install-dependencies.md)), or disable with `cmake -DDISABLE_S7=ON`. On S7-1200/1500 enable PUT/GET and disable optimized block access in TIA Portal.
+
 ## Files
 
 - [docker-compose.yml](./docker-compose.yml) — chạy production (chỉ `image:`, không build).
 - [nginx.conf](./nginx.conf) — single-origin bridge for `/api/v2/remote/*`.
 - [docker-compose.build.yml](./docker-compose.build.yml) — build cả hai image một lệnh.
 - [.env.example](./.env.example) — image, port, token.
+- [../../scripts/minipc-bundle-pack.sh](../../scripts/minipc-bundle-pack.sh) — đóng gói thư mục + tar cho nhiều máy.
 - [../../scripts/mqtt-fulltable-warmup.py](../../scripts/mqtt-fulltable-warmup.py) — warm-up lại MQTT full-table snapshot.
 
 ## MQTT Full Table Warm-up
@@ -107,7 +152,8 @@ sudo ./minipc-cm4-edge.sh install
 Nếu đã bật `Full Table On Change = true` nhưng payload trên mini PC vẫn thiếu tag:
 
 ```bash
-ssh minipc-hoanhbo 'python3 /opt/neuron/emqx-neuron/scripts/mqtt-fulltable-warmup.py --base-url http://127.0.0.1 --mqtt-app mqtt-hoanhbo'
+# Trên mini PC (hoặc SSH): dùng bản copy trong thư mục bundle, hoặc đường dẫn repo
+python3 mqtt-fulltable-warmup.py --base-url http://127.0.0.1 --mqtt-app <tên-app-mqtt>
 ```
 
 Script sẽ:

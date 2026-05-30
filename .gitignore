@@ -24,3 +24,6 @@ report.html
 
 # Core dumps / local native build debris (GitHub 100MB limit)
 build-native-cm4/core
+
+# minipc-bundle-pack.sh output (compose + scripts + optional image tar)
+dist/

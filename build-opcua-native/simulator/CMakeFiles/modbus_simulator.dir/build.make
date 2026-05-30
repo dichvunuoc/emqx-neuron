@@ -114,6 +114,7 @@ simulator/modbus_simulator: simulator/CMakeFiles/modbus_simulator.dir/build.make
 simulator/modbus_simulator: libneuron-base.dylib
 simulator/modbus_simulator: /opt/homebrew/Cellar/openssl@3/3.6.2/lib/libssl.a
 simulator/modbus_simulator: /opt/homebrew/Cellar/openssl@3/3.6.2/lib/libcrypto.a
+simulator/modbus_simulator: /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/lib/libxml2.tbd
 simulator/modbus_simulator: simulator/CMakeFiles/modbus_simulator.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Linking C executable modbus_simulator"
 	cd /Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/simulator && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/modbus_simulator.dir/link.txt --verbose=$(VERBOSE)

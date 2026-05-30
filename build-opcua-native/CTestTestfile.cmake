@@ -6,6 +6,7 @@
 # testing this directory and lists subdirectories to be tested as well.
 subdirs("plugins/modbus")
 subdirs("plugins/opcua")
+subdirs("plugins/s7")
 subdirs("plugins/mqtt")
 subdirs("plugins/ekuiper")
 subdirs("plugins/file")

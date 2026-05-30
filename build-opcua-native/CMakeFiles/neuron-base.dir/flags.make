@@ -4,7 +4,7 @@
 # compile C with /usr/bin/cc
 C_DEFINES = -DNEU_PLATFORM_DARWIN -DNEU_RELEASE -Dneuron_base_EXPORTS
 
-C_INCLUDES = -I/usr/local/include -I/usr/local/include/libxml2 -I/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/include/neuron -I/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/src -isystem /opt/homebrew/Cellar/openssl@3/3.6.2/include
+C_INCLUDES = -I/Library/Developer/CommandLineTools/SDKs/MacOSX15.sdk/usr/include/libxml2 -I/usr/local/include -I/usr/local/include/libxml2 -I/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/include/neuron -I/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/src -isystem /opt/homebrew/Cellar/openssl@3/3.6.2/include
 
 C_FLAGSarm64 =  -Werror -Wall -Wextra -g  -Werror -Wall -Wextra -g -O0 -std=gnu99 -arch arm64 -fPIC
 

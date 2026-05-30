@@ -4,6 +4,7 @@
 		"/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/cmake_install.cmake",
 		"/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/plugins/modbus/cmake_install.cmake",
 		"/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/plugins/opcua/cmake_install.cmake",
+		"/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/plugins/s7/cmake_install.cmake",
 		"/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/plugins/mqtt/cmake_install.cmake",
 		"/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/plugins/ekuiper/cmake_install.cmake",
 		"/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/plugins/file/cmake_install.cmake",

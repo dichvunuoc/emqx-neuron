@@ -152,8 +152,9 @@ rm -f "${ENV_TMP}"
 [[ -n "${CLEANUP_LOCAL_TAR}" ]] && rm -f "${CLEANUP_LOCAL_TAR}"
 
 echo ">> ssh: cài Docker (nếu cần), docker load, compose up"
-ssh "${MINIPC_SSH}" \
+ssh -tt "${MINIPC_SSH}" \
   INSTALL_DIR="${INSTALL_DIR}" \
+  NEURON_IMAGE="${NEURON_IMAGE}" \
   REMOTE_TAR="${REMOTE_TAR}" \
   COMPOSE_TMP="${COMPOSE_TMP}" \
   NGINX_TMP="${NGINX_TMP}" \
@@ -186,6 +187,16 @@ fi
 echo ">> Thư mục ${INSTALL_DIR}"
 ${SUDO} mkdir -p "${INSTALL_DIR}/data/config" "${INSTALL_DIR}/data/logs" "${INSTALL_DIR}/data/persistence"
 ${SUDO} docker load -i "${REMOTE_TAR}"
+NEURON_IMAGE="${NEURON_IMAGE:-}"
+if [[ -n "${NEURON_IMAGE}" ]]; then
+  CFG="${INSTALL_DIR}/data/config/default_plugins.json"
+  if [[ ! -f "${CFG}" ]] || ! grep -q 'libplugin-s7comm\.so' "${CFG}" 2>/dev/null; then
+    echo ">> Đồng bộ default_plugins.json từ image (S7 / plugin mới)"
+    ${SUDO} docker run --rm "${NEURON_IMAGE}" cat /opt/neuron/config/default_plugins.json > /tmp/default_plugins.json
+    ${SUDO} install -m 0644 /tmp/default_plugins.json "${CFG}"
+    rm -f /tmp/default_plugins.json
+  fi
+fi
 ${SUDO} install -m 0644 "${COMPOSE_TMP}" "${INSTALL_DIR}/docker-compose.yml"
 ${SUDO} install -m 0644 "${NGINX_TMP}" "${INSTALL_DIR}/nginx.conf"
 ${SUDO} install -m 0600 "${ENV_REMOTE}" "${INSTALL_DIR}/.env"
@@ -204,6 +215,9 @@ unset _frag
 
 echo ">> docker compose up -d"
 ( cd "${INSTALL_DIR}" && ${SUDO} docker compose up -d )
+if grep -q 'libplugin-s7comm\.so' "${INSTALL_DIR}/data/config/default_plugins.json" 2>/dev/null; then
+  ( cd "${INSTALL_DIR}" && ${SUDO} docker compose restart neuron ) || true
+fi
 
 if [[ "${REMOVE_REMOTE_TAR_AFTER}" == "1" ]]; then
   rm -f "${REMOTE_TAR}"

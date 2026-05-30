@@ -98,6 +98,7 @@ plugins/libplugin-opcua.dylib: plugins/opcua/CMakeFiles/plugin-opcua.dir/build.m
 plugins/libplugin-opcua.dylib: libneuron-base.dylib
 plugins/libplugin-opcua.dylib: /opt/homebrew/Cellar/openssl@3/3.6.2/lib/libssl.a
 plugins/libplugin-opcua.dylib: /opt/homebrew/Cellar/openssl@3/3.6.2/lib/libcrypto.a
+plugins/libplugin-opcua.dylib: /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/lib/libxml2.tbd
 plugins/libplugin-opcua.dylib: plugins/opcua/CMakeFiles/plugin-opcua.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking C shared library ../libplugin-opcua.dylib"
 	cd /Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/plugins/opcua && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/plugin-opcua.dir/link.txt --verbose=$(VERBOSE)

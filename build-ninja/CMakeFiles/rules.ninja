@@ -98,6 +98,63 @@ rule C_SHARED_LIBRARY_LINKER__plugin-modbus-tcp_Debug
 #############################################
 # Rule for compiling C files.
 
+rule C_COMPILER__plugin-opcua_unscanned_Debug
+  depfile = $DEP_FILE
+  deps = gcc
+  command = ${LAUNCHER}${CODE_CHECK}/usr/bin/cc $DEFINES $INCLUDES $FLAGS -MD -MT $out -MF $DEP_FILE -o $out -c $in
+  description = Building C object $out
+
+
+#############################################
+# Rule for linking C shared library.
+
+rule C_SHARED_LIBRARY_LINKER__plugin-opcua_Debug
+  command = $PRE_LINK && /usr/bin/cc $LANGUAGE_COMPILE_FLAGS $ARCH_FLAGS $LINK_FLAGS -o $TARGET_FILE $SONAME_FLAG $INSTALLNAME_DIR$SONAME $in $LINK_PATH $LINK_LIBRARIES && $POST_BUILD
+  description = Linking C shared library $TARGET_FILE
+  restat = $RESTAT
+
+
+#############################################
+# Rule for compiling C files.
+
+rule C_COMPILER__plugin-s7comm_unscanned_Debug
+  depfile = $DEP_FILE
+  deps = gcc
+  command = ${LAUNCHER}${CODE_CHECK}/usr/bin/cc $DEFINES $INCLUDES $FLAGS -MD -MT $out -MF $DEP_FILE -o $out -c $in
+  description = Building C object $out
+
+
+#############################################
+# Rule for linking C shared library.
+
+rule C_SHARED_LIBRARY_LINKER__plugin-s7comm_Debug
+  command = $PRE_LINK && /usr/bin/cc $LANGUAGE_COMPILE_FLAGS $ARCH_FLAGS $LINK_FLAGS -o $TARGET_FILE $SONAME_FLAG $INSTALLNAME_DIR$SONAME $in $LINK_PATH $LINK_LIBRARIES && $POST_BUILD
+  description = Linking C shared library $TARGET_FILE
+  restat = $RESTAT
+
+
+#############################################
+# Rule for compiling C files.
+
+rule C_COMPILER__plugin-s7comm_for_300_unscanned_Debug
+  depfile = $DEP_FILE
+  deps = gcc
+  command = ${LAUNCHER}${CODE_CHECK}/usr/bin/cc $DEFINES $INCLUDES $FLAGS -MD -MT $out -MF $DEP_FILE -o $out -c $in
+  description = Building C object $out
+
+
+#############################################
+# Rule for linking C shared library.
+
+rule C_SHARED_LIBRARY_LINKER__plugin-s7comm_for_300_Debug
+  command = $PRE_LINK && /usr/bin/cc $LANGUAGE_COMPILE_FLAGS $ARCH_FLAGS $LINK_FLAGS -o $TARGET_FILE $SONAME_FLAG $INSTALLNAME_DIR$SONAME $in $LINK_PATH $LINK_LIBRARIES && $POST_BUILD
+  description = Linking C shared library $TARGET_FILE
+  restat = $RESTAT
+
+
+#############################################
+# Rule for compiling C files.
+
 rule C_COMPILER__plugin-mqtt_unscanned_Debug
   depfile = $DEP_FILE
   deps = gcc

@@ -48,6 +48,13 @@ target_include_directories(modbus_test PRIVATE
 				${CMAKE_SOURCE_DIR}/plugins/modbus)
 target_link_libraries(modbus_test neuron-base gtest_main gtest pthread zlog)
 
+add_executable(s7_addr_test s7_addr_test.cc
+				${CMAKE_SOURCE_DIR}/plugins/s7/s7_addr.c)
+target_compile_definitions(s7_addr_test PRIVATE NEU_S7_HAS_SNAP7=0)
+target_include_directories(s7_addr_test PRIVATE
+				${CMAKE_SOURCE_DIR}/plugins/s7)
+target_link_libraries(s7_addr_test neuron-base gtest_main gtest pthread zlog)
+
 add_executable(async_queue_test async_queue_test.cc 
 	${CMAKE_SOURCE_DIR}/src/utils/async_queue.c)
 target_include_directories(async_queue_test PRIVATE 
@@ -100,6 +107,7 @@ gtest_discover_tests(jwt_test)
 gtest_discover_tests(base64_test)
 gtest_discover_tests(tag_sort_test)
 gtest_discover_tests(modbus_test)
+gtest_discover_tests(s7_addr_test)
 gtest_discover_tests(async_queue_test)
 gtest_discover_tests(rolling_counter_test)
 gtest_discover_tests(mqtt_client_test)

@@ -146,6 +146,7 @@ plugins/libplugin-kafka.dylib: plugins/kafka/CMakeFiles/plugin-kafka.dir/build.m
 plugins/libplugin-kafka.dylib: libneuron-base.dylib
 plugins/libplugin-kafka.dylib: /opt/homebrew/Cellar/openssl@3/3.6.2/lib/libssl.a
 plugins/libplugin-kafka.dylib: /opt/homebrew/Cellar/openssl@3/3.6.2/lib/libcrypto.a
+plugins/libplugin-kafka.dylib: /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/lib/libxml2.tbd
 plugins/libplugin-kafka.dylib: /opt/homebrew/Cellar/librdkafka/2.14.1/lib/librdkafka.dylib
 plugins/libplugin-kafka.dylib: plugins/kafka/CMakeFiles/plugin-kafka.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Linking C shared library ../libplugin-kafka.dylib"

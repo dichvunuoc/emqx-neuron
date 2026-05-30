@@ -28,6 +28,8 @@ STUB_IMAGE="${STUB_IMAGE:-}"
 STACK_REGISTRY="${STACK_REGISTRY:-}"
 STACK_TAG="${STACK_TAG:-latest}"
 SKIP_DOCKER_INSTALL="${SKIP_DOCKER_INSTALL:-0}"
+MINIPC_BUNDLE_DIR="${MINIPC_BUNDLE_DIR:-}"
+SKIP_DOCKER_PULL="${SKIP_DOCKER_PULL:-}"
 
 SUDO=""
 if [[ "${EUID}" -ne 0 ]]; then
@@ -84,7 +86,9 @@ Lệnh:
 Tuỳ chọn:
   INSTALL_DIR              mặc định /opt/neuron-minipc
   SOURCE_BASE_URL          ghi đè URL raw deploy/minipc
+  MINIPC_BUNDLE_DIR        thư mục có docker-compose.yml, nginx.conf, .env.example (USB / gói minipc-bundle-pack)
   SKIP_DOCKER_INSTALL=1    không chạy get.docker.com
+  SKIP_DOCKER_PULL=1       không docker pull (offline). Mặc định: tự bật nếu có STACK_IMAGE_TAR.
   STACK_IMAGE_TAR / IMAGE_TAR / STUB_IMAGE_TAR  docker load trước khi pull
 
 Ví dụ update sau khi bạn đổi tag trong .env:
@@ -94,11 +98,19 @@ HELP
 }
 
 resolve_source_url() {
+  if [[ -n "${MINIPC_BUNDLE_DIR}" ]]; then
+    MINIPC_BUNDLE_DIR="$(cd "${MINIPC_BUNDLE_DIR}" && pwd)"
+    if [[ ! -f "${MINIPC_BUNDLE_DIR}/docker-compose.yml" ]]; then
+      echo "ERROR: MINIPC_BUNDLE_DIR=${MINIPC_BUNDLE_DIR} thiếu docker-compose.yml" >&2
+      exit 1
+    fi
+    return 0
+  fi
   if [[ -n "${SOURCE_BASE_URL}" ]]; then
     return
   fi
   if [[ -z "${INSTALL_SCRIPT_REPO}" ]]; then
-    echo "ERROR: set INSTALL_SCRIPT_REPO (owner/repo) hoặc SOURCE_BASE_URL." >&2
+    echo "ERROR: set INSTALL_SCRIPT_REPO (owner/repo), SOURCE_BASE_URL, hoặc MINIPC_BUNDLE_DIR." >&2
     exit 1
   fi
   SOURCE_BASE_URL="https://raw.githubusercontent.com/${INSTALL_SCRIPT_REPO}/${INSTALL_SCRIPT_BRANCH}/deploy/minipc"
@@ -107,9 +119,10 @@ resolve_source_url() {
 write_meta() {
   ${SUDO} mkdir -p "${INSTALL_DIR}"
   {
-    echo "INSTALL_SCRIPT_REPO=${INSTALL_SCRIPT_REPO}"
-    echo "INSTALL_SCRIPT_BRANCH=${INSTALL_SCRIPT_BRANCH}"
-    echo "SOURCE_BASE_URL=${SOURCE_BASE_URL}"
+    echo "INSTALL_SCRIPT_REPO=${INSTALL_SCRIPT_REPO:-}"
+    echo "INSTALL_SCRIPT_BRANCH=${INSTALL_SCRIPT_BRANCH:-main}"
+    echo "SOURCE_BASE_URL=${SOURCE_BASE_URL:-}"
+    echo "MINIPC_BUNDLE_DIR=${MINIPC_BUNDLE_DIR:-}"
   } | ${SUDO} tee "${META_FILE}" >/dev/null
   ${SUDO} chmod 0600 "${META_FILE}" 2>/dev/null || true
 }
@@ -123,11 +136,11 @@ read_meta() {
   # shellcheck disable=SC1090
   source "${META_FILE}"
   set +a
-  if [[ -z "${SOURCE_BASE_URL:-}" ]]; then
+  if [[ -z "${SOURCE_BASE_URL:-}" ]] && [[ -z "${MINIPC_BUNDLE_DIR:-}" ]]; then
     if [[ -n "${INSTALL_SCRIPT_REPO:-}" ]]; then
       SOURCE_BASE_URL="https://raw.githubusercontent.com/${INSTALL_SCRIPT_REPO}/${INSTALL_SCRIPT_BRANCH}/deploy/minipc"
     else
-      echo "ERROR: ${META_FILE} thiếu SOURCE_BASE_URL." >&2
+      echo "ERROR: ${META_FILE} cần SOURCE_BASE_URL, MINIPC_BUNDLE_DIR, hoặc INSTALL_SCRIPT_REPO." >&2
       exit 1
     fi
   fi
@@ -172,24 +185,37 @@ cmd_install() {
 
   local tmp
   local tmp_nginx
-  tmp="$(mktemp)"
-  curl -fsSL "${SOURCE_BASE_URL}/docker-compose.yml" -o "${tmp}"
-  ${SUDO} install -m 0644 "${tmp}" "${INSTALL_DIR}/docker-compose.yml"
-  rm -f "${tmp}"
-  tmp_nginx="$(mktemp)"
-  curl -fsSL "${SOURCE_BASE_URL}/nginx.conf" -o "${tmp_nginx}"
-  ${SUDO} install -m 0644 "${tmp_nginx}" "${INSTALL_DIR}/nginx.conf"
-  rm -f "${tmp_nginx}"
+  if [[ -n "${MINIPC_BUNDLE_DIR}" ]]; then
+    echo ">> Copy compose + nginx từ bundle ${MINIPC_BUNDLE_DIR}"
+    ${SUDO} install -m 0644 "${MINIPC_BUNDLE_DIR}/docker-compose.yml" "${INSTALL_DIR}/docker-compose.yml"
+    ${SUDO} install -m 0644 "${MINIPC_BUNDLE_DIR}/nginx.conf" "${INSTALL_DIR}/nginx.conf"
+  else
+    tmp="$(mktemp)"
+    curl -fsSL "${SOURCE_BASE_URL}/docker-compose.yml" -o "${tmp}"
+    ${SUDO} install -m 0644 "${tmp}" "${INSTALL_DIR}/docker-compose.yml"
+    rm -f "${tmp}"
+    tmp_nginx="$(mktemp)"
+    curl -fsSL "${SOURCE_BASE_URL}/nginx.conf" -o "${tmp_nginx}"
+    ${SUDO} install -m 0644 "${tmp_nginx}" "${INSTALL_DIR}/nginx.conf"
+    rm -f "${tmp_nginx}"
+  fi
 
   if [[ -f "${INSTALL_DIR}/.env" ]]; then
     echo ">> Giữ ${INSTALL_DIR}/.env (chỉnh tag rồi chạy update nếu đổi image)"
   else
-    curl -fsSL "${SOURCE_BASE_URL}/.env.example" -o "${tmp}"
+    if [[ -n "${MINIPC_BUNDLE_DIR}" ]]; then
+      tmp="${MINIPC_BUNDLE_DIR}/.env.example"
+    else
+      tmp="$(mktemp)"
+      curl -fsSL "${SOURCE_BASE_URL}/.env.example" -o "${tmp}"
+    fi
     sed \
       -e "s|^NEURON_IMAGE=.*|NEURON_IMAGE=${NEURON_IMAGE}|" \
       -e "s|^REMOTE_STUB_IMAGE=.*|REMOTE_STUB_IMAGE=${REMOTE_STUB_IMAGE}|" \
       "${tmp}" | ${SUDO} tee "${INSTALL_DIR}/.env" >/dev/null
-    rm -f "${tmp}"
+    if [[ -z "${MINIPC_BUNDLE_DIR}" ]]; then
+      rm -f "${tmp}"
+    fi
     ${SUDO} chmod 0600 "${INSTALL_DIR}/.env"
   fi
 
@@ -216,21 +242,38 @@ cmd_install() {
   source "${INSTALL_DIR}/.env"
   set +a
 
-  echo ">> docker pull"
-  DKR pull "${NEURON_IMAGE}"
-  DKR pull "${REMOTE_STUB_IMAGE}"
+  if [[ -z "${SKIP_DOCKER_PULL}" ]]; then
+    if [[ -n "${STACK_IMAGE_TAR:-}" ]]; then
+      SKIP_DOCKER_PULL=1
+    else
+      SKIP_DOCKER_PULL=0
+    fi
+  fi
+  if [[ "${SKIP_DOCKER_PULL}" == "1" ]]; then
+    echo ">> Bỏ qua docker pull (offline / STACK_IMAGE_TAR / SKIP_DOCKER_PULL=1)."
+  else
+    echo ">> docker pull"
+    DKR pull "${NEURON_IMAGE}"
+    DKR pull "${REMOTE_STUB_IMAGE}"
+  fi
 
   minipc_disable_native_neuron
 
   echo ">> docker compose up -d"
   ( cd "${INSTALL_DIR}" && DC up -d )
 
-  echo ">> Xong. UI: http://$(hostname -I 2>/dev/null | awk '{print $1}' || echo 'IP-MINI-PC'):7000/"
-  echo ">> Stub: port 18080 — xem .env (REMOTE_STUB_HTTP_PORT)."
+  ip_hint="$(hostname -I 2>/dev/null | awk '{print $1}' || echo 'IP-MINI-PC')"
+  echo ">> Xong. UI (proxy): http://${ip_hint}/ (mặc định port 80 — xem NEURON_HTTP_PORT trong .env)"
+  echo ">> Stub: port ${REMOTE_STUB_HTTP_PORT:-18080} — xem .env."
 }
 
 cmd_update() {
+  local cli_bundle="${MINIPC_BUNDLE_DIR:-}"
   read_meta
+  if [[ -n "${cli_bundle}" ]]; then
+    MINIPC_BUNDLE_DIR="$(cd "${cli_bundle}" && pwd)"
+  fi
+
   ensure_docker
 
   if [[ ! -f "${INSTALL_DIR}/.env" ]]; then
@@ -240,21 +283,32 @@ cmd_update() {
 
   local tmp
   local tmp_nginx
-  tmp="$(mktemp)"
-  echo ">> Tải docker-compose.yml mới từ ${SOURCE_BASE_URL}"
-  curl -fsSL "${SOURCE_BASE_URL}/docker-compose.yml" -o "${tmp}"
-  ${SUDO} install -m 0644 "${tmp}" "${INSTALL_DIR}/docker-compose.yml"
-  rm -f "${tmp}"
-  echo ">> Tải nginx.conf mới từ ${SOURCE_BASE_URL}"
-  tmp_nginx="$(mktemp)"
-  curl -fsSL "${SOURCE_BASE_URL}/nginx.conf" -o "${tmp_nginx}"
-  ${SUDO} install -m 0644 "${tmp_nginx}" "${INSTALL_DIR}/nginx.conf"
-  rm -f "${tmp_nginx}"
+  if [[ -n "${MINIPC_BUNDLE_DIR:-}" && -f "${MINIPC_BUNDLE_DIR}/docker-compose.yml" ]]; then
+    echo ">> Copy compose + nginx từ bundle ${MINIPC_BUNDLE_DIR}"
+    ${SUDO} install -m 0644 "${MINIPC_BUNDLE_DIR}/docker-compose.yml" "${INSTALL_DIR}/docker-compose.yml"
+    ${SUDO} install -m 0644 "${MINIPC_BUNDLE_DIR}/nginx.conf" "${INSTALL_DIR}/nginx.conf"
+  else
+    tmp="$(mktemp)"
+    echo ">> Tải docker-compose.yml mới từ ${SOURCE_BASE_URL}"
+    curl -fsSL "${SOURCE_BASE_URL}/docker-compose.yml" -o "${tmp}"
+    ${SUDO} install -m 0644 "${tmp}" "${INSTALL_DIR}/docker-compose.yml"
+    rm -f "${tmp}"
+    tmp_nginx="$(mktemp)"
+    echo ">> Tải nginx.conf mới từ ${SOURCE_BASE_URL}"
+    curl -fsSL "${SOURCE_BASE_URL}/nginx.conf" -o "${tmp_nginx}"
+    ${SUDO} install -m 0644 "${tmp_nginx}" "${INSTALL_DIR}/nginx.conf"
+    rm -f "${tmp_nginx}"
+  fi
 
   minipc_disable_native_neuron
 
-  echo ">> docker compose pull && up -d"
-  ( cd "${INSTALL_DIR}" && DC pull && DC up -d )
+  if [[ -n "${MINIPC_BUNDLE_DIR:-}" && -f "${MINIPC_BUNDLE_DIR}/docker-compose.yml" ]]; then
+    echo ">> docker compose up -d (không pull — cập nhật từ bundle / offline)"
+    ( cd "${INSTALL_DIR}" && DC up -d )
+  else
+    echo ">> docker compose pull && up -d"
+    ( cd "${INSTALL_DIR}" && DC pull && DC up -d )
+  fi
 
   echo ">> Cập nhật xong."
 }

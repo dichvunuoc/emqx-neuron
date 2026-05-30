@@ -17,7 +17,7 @@ Key features:
 - Edge-native application with real-time capability and low latency at the edge.
 - Loosely coupled modular architecture with pluggable modules for easy extension.
 - Hot-pluggable plugins: update device and application modules at runtime.
-- Broad protocol support: Modbus, OPC UA, Ethernet/IP, IEC 60870-5-104, BACnet, and more.
+- Broad protocol support: Modbus, OPC UA, Siemens S7 (Snap7), Ethernet/IP, IEC 60870-5-104, BACnet, and more.
 - High concurrency: connect many devices with heterogeneous protocols simultaneously.
 - Built-in stream processing via [eKuiper](https://www.lfedge.org/projects/ekuiper) for rules and AI/ML analytics.
 - Northbound access for MES/ERP, SCADA, historians, and analytics via Sparkplug B.
@@ -117,7 +117,7 @@ See the quick start for a hands-on walkthrough.
 - Bulk north MQTT subscribe + optional tags from Excel: [scripts/neuron-excel-import/](scripts/neuron-excel-import/) (`neuron_excel_import.py`, template `.xlsx`, `OPERATOR_NOTES.txt`)
 - CM4 native build helper (no Docker): [scripts/build-native-cm4.sh](./scripts/build-native-cm4.sh)
 - CM4 one-command setup (native only): [scripts/cm4-one-command-setup.sh](./scripts/cm4-one-command-setup.sh)
-- Mini PC Docker stack (Neuron UI from source + remote stub, `curl | bash`): [deploy/minipc/README.md](./deploy/minipc/README.md), [scripts/install-minipc-docker.sh](./scripts/install-minipc-docker.sh), [scripts/minipc-cm4-edge.sh](./scripts/minipc-cm4-edge.sh) (install/update khi đã SSH vào CM4), [scripts/minipc-mac-ssh-deploy.sh](./scripts/minipc-mac-ssh-deploy.sh) (Mac: build + scp + ssh cài trên mini PC), [scripts/docker-release-build.sh](./scripts/docker-release-build.sh)
+- Mini PC Docker stack (Neuron UI from source + remote stub, `curl | bash`): [deploy/minipc/README.md](./deploy/minipc/README.md), [scripts/install-minipc-docker.sh](./scripts/install-minipc-docker.sh), [scripts/minipc-cm4-edge.sh](./scripts/minipc-cm4-edge.sh) (install/update khi đã SSH vào CM4), [scripts/minipc-mac-ssh-deploy.sh](./scripts/minipc-mac-ssh-deploy.sh) (Mac: build + scp + ssh cài trên mini PC), [scripts/minipc-bundle-pack.sh](./scripts/minipc-bundle-pack.sh) (gói thư mục + `docker save` để cài lặp lại / offline), [scripts/docker-release-build.sh](./scripts/docker-release-build.sh)
 - CM4 remote install (`curl | bash`, native): [scripts/install-cm4-native-remote.sh](./scripts/install-cm4-native-remote.sh)
   - Example:  
     `curl -fsSL https://raw.githubusercontent.com/dichvunuoc/emqx-neuron/main/scripts/install-cm4-native-remote.sh | bash -s -- --repo https://github.com/dichvunuoc/emqx-neuron.git --branch main --enable-service`

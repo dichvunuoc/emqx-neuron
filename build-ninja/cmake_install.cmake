@@ -83,6 +83,8 @@ endif()
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
   include("/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-ninja/plugins/modbus/cmake_install.cmake")
+  include("/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-ninja/plugins/opcua/cmake_install.cmake")
+  include("/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-ninja/plugins/s7/cmake_install.cmake")
   include("/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-ninja/plugins/mqtt/cmake_install.cmake")
   include("/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-ninja/plugins/ekuiper/cmake_install.cmake")
   include("/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-ninja/plugins/file/cmake_install.cmake")

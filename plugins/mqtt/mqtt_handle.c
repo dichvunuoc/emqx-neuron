@@ -18,7 +18,6 @@
  **/
 
 #include "connection/mqtt_client.h"
-#include <math.h>
 #include "errcodes.h"
 #include "otel/otel_manager.h"
 #include "utils/asprintf.h"
@@ -98,190 +97,205 @@ static int tag_values_to_json(UT_array *tags, mqtt_static_vt_t *s_tags,
     return 0;
 }
 
-static double round_to_digits(double value, uint8_t digits)
+#define MQTT_FULL_TABLE_CTX_MAGIC 0x4d465443u /* 'MFTC' */
+
+struct mqtt_full_table_ctx {
+    uint32_t magic;
+    char *   topic;
+    char *   driver;
+    char *   group;
+    char *   static_tags_json;
+    char     trace_parent[128];
+};
+
+uint32_t mqtt_full_table_ctx_magic(void)
 {
-    double scale = pow(10.0, digits);
-    return round(value * scale) / scale;
+    return MQTT_FULL_TABLE_CTX_MAGIC;
 }
 
-static mqtt_snapshot_group_t *get_or_create_snapshot_group(neu_plugin_t *plugin,
-                                                            const char *driver,
-                                                            const char *group)
+bool mqtt_full_table_ctx_is(void *ctx)
 {
-    route_key_t key = { 0 };
-    strncpy(key.driver, driver, sizeof(key.driver));
-    strncpy(key.group, group, sizeof(key.group));
-
-    mqtt_snapshot_group_t *snapshot = NULL;
-    HASH_FIND(hh, plugin->snapshot_tbl, &key, sizeof(key), snapshot);
-    if (snapshot != NULL) {
-        return snapshot;
+    if (ctx == NULL) {
+        return false;
     }
+    mqtt_full_table_ctx_t *ft = ctx;
+    return ft->magic == MQTT_FULL_TABLE_CTX_MAGIC;
+}
 
-    snapshot = calloc(1, sizeof(*snapshot));
-    if (snapshot == NULL) {
+static void mqtt_full_table_ctx_free(mqtt_full_table_ctx_t *ctx)
+{
+    if (ctx == NULL) {
+        return;
+    }
+    free(ctx->topic);
+    free(ctx->driver);
+    free(ctx->group);
+    free(ctx->static_tags_json);
+    free(ctx);
+}
+
+void mqtt_full_table_ctx_destroy(void *ctx)
+{
+    if (mqtt_full_table_ctx_is(ctx)) {
+        mqtt_full_table_ctx_free((mqtt_full_table_ctx_t *) ctx);
+    }
+}
+
+static mqtt_full_table_ctx_t *
+mqtt_full_table_ctx_new(neu_plugin_t *plugin, const char *driver,
+                        const char *group, const char *topic,
+                        const char *static_tags_json, const char *trace_parent)
+{
+    mqtt_full_table_ctx_t *ctx = calloc(1, sizeof(*ctx));
+    if (ctx == NULL) {
         return NULL;
     }
-    snapshot->key = key;
-    HASH_ADD(hh, plugin->snapshot_tbl, key, sizeof(snapshot->key), snapshot);
-    return snapshot;
+    ctx->magic  = MQTT_FULL_TABLE_CTX_MAGIC;
+    ctx->topic  = strdup(topic);
+    ctx->driver = strdup(driver);
+    ctx->group  = strdup(group);
+    if (ctx->topic == NULL || ctx->driver == NULL || ctx->group == NULL) {
+        mqtt_full_table_ctx_free(ctx);
+        return NULL;
+    }
+    if (static_tags_json != NULL && static_tags_json[0] != '\0') {
+        ctx->static_tags_json = strdup(static_tags_json);
+        if (ctx->static_tags_json == NULL) {
+            mqtt_full_table_ctx_free(ctx);
+            return NULL;
+        }
+    }
+    if (trace_parent != NULL && trace_parent[0] != '\0') {
+        strncpy(ctx->trace_parent, trace_parent, sizeof(ctx->trace_parent) - 1);
+    }
+    (void) plugin;
+    return ctx;
 }
 
-static bool snapshot_tag_value_equal(const mqtt_snapshot_tag_t *cached,
-                                     const neu_json_read_resp_tag_t *incoming)
+static int mqtt_request_full_table_publish(neu_plugin_t *plugin,
+                                           const char *    driver,
+                                           const char *    group,
+                                           const char *    topic,
+                                           const char *    static_tags_json,
+                                           const char *    trace_parent)
 {
-    if (cached->error != incoming->error || cached->t != incoming->t) {
-        return false;
-    }
-
-    switch (incoming->t) {
-    case NEU_JSON_INT:
-    case NEU_JSON_BIT:
-        return cached->value.val_int == incoming->value.val_int;
-    case NEU_JSON_FLOAT:
-        return cached->value.val_float == incoming->value.val_float;
-    case NEU_JSON_DOUBLE:
-        return cached->value.val_double == incoming->value.val_double;
-    case NEU_JSON_BOOL:
-        return cached->value.val_bool == incoming->value.val_bool;
-    case NEU_JSON_STR:
-        if (cached->value.val_str == NULL || incoming->value.val_str == NULL) {
-            return cached->value.val_str == incoming->value.val_str;
-        }
-        return strcmp(cached->value.val_str, incoming->value.val_str) == 0;
-    default:
-        return false;
-    }
-}
-
-static int snapshot_upsert_tag(mqtt_snapshot_group_t *snapshot,
-                               neu_json_read_resp_tag_t *incoming)
-{
-    mqtt_snapshot_tag_t *cached = NULL;
-    HASH_FIND_STR(snapshot->tags, incoming->name, cached);
-
-    if (cached == NULL) {
-        cached = calloc(1, sizeof(*cached));
-        if (cached == NULL) {
-            return -1;
-        }
-        cached->name = strdup(incoming->name);
-        if (cached->name == NULL) {
-            free(cached);
-            return -1;
-        }
-        HASH_ADD_KEYPTR(hh, snapshot->tags, cached->name, strlen(cached->name),
-                        cached);
-    } else if (cached->t == NEU_JSON_STR && cached->value.val_str != NULL) {
-        free(cached->value.val_str);
-        cached->value.val_str = NULL;
-    }
-
-    cached->error     = incoming->error;
-    cached->t         = incoming->t;
-    cached->precision = incoming->precision;
-    cached->bias      = incoming->datatag.bias;
-
-    switch (incoming->t) {
-    case NEU_JSON_INT:
-    case NEU_JSON_BIT:
-        cached->value.val_int = incoming->value.val_int;
-        break;
-    case NEU_JSON_FLOAT:
-        cached->value.val_float = incoming->value.val_float;
-        break;
-    case NEU_JSON_DOUBLE:
-        cached->value.val_double = incoming->value.val_double;
-        break;
-    case NEU_JSON_BOOL:
-        cached->value.val_bool = incoming->value.val_bool;
-        break;
-    case NEU_JSON_STR:
-        cached->value.val_str =
-            incoming->value.val_str ? strdup(incoming->value.val_str) : NULL;
-        if (incoming->value.val_str != NULL && cached->value.val_str == NULL) {
-            return -1;
-        }
-        break;
-    default:
+    mqtt_full_table_ctx_t *ctx =
+        mqtt_full_table_ctx_new(plugin, driver, group, topic, static_tags_json,
+                                trace_parent);
+    if (ctx == NULL) {
+        plog_error(plugin, "full table ctx alloc fail driver:%s group:%s",
+                   driver, group);
         return -1;
     }
 
+    neu_reqresp_head_t header = { 0 };
+    header.ctx                = ctx;
+    header.type               = NEU_REQ_READ_GROUP;
+
+    neu_req_read_group_t cmd = { 0 };
+    cmd.driver               = strdup(driver);
+    cmd.group                = strdup(group);
+    cmd.sync                 = false;
+    if (cmd.driver == NULL || cmd.group == NULL) {
+        neu_req_read_group_fini(&cmd);
+        mqtt_full_table_ctx_free(ctx);
+        return -1;
+    }
+
+    if (0 != neu_plugin_op(plugin, header, &cmd)) {
+        neu_req_read_group_fini(&cmd);
+        mqtt_full_table_ctx_free(ctx);
+        plog_error(plugin, "neu_plugin_op(NEU_REQ_READ_GROUP) fail driver:%s "
+                           "group:%s",
+                   driver, group);
+        return -1;
+    }
+
+    plog_debug(plugin, "full table read queued driver:%s group:%s", driver,
+               group);
     return 0;
 }
 
-static int build_snapshot_json(neu_plugin_t *plugin, neu_reqresp_trans_data_t *data,
-                               mqtt_upload_format_e format, mqtt_static_vt_t *s_tags,
-                               size_t n_s_tags, char **json_str, bool *skip)
+char *generate_upload_json(neu_plugin_t *plugin, neu_reqresp_trans_data_t *data,
+                           mqtt_upload_format_e format, mqtt_schema_vt_t *vts,
+                           size_t n_vts, mqtt_static_vt_t *s_tags,
+                           size_t n_s_tags, bool *skip);
+
+int handle_full_table_read_response(neu_plugin_t *         plugin,
+                                    mqtt_full_table_ctx_t *ft_ctx,
+                                    neu_resp_read_group_t *data)
 {
-    neu_json_read_periodic_t header = { .group     = (char *) data->group,
-                                        .node      = (char *) data->driver,
-                                        .timestamp = global_timestamp };
-    neu_json_read_resp_t json = { 0 };
-    route_key_t          key  = { 0 };
-    strncpy(key.driver, data->driver, sizeof(key.driver));
-    strncpy(key.group, data->group, sizeof(key.group));
+    int               rv       = NEU_ERR_SUCCESS;
+    char *            json_str = NULL;
+    bool              skip     = false;
+    size_t            n_static = 0;
+    mqtt_static_vt_t *static_tags = NULL;
 
-    mqtt_snapshot_group_t *snapshot = NULL;
-    HASH_FIND(hh, plugin->snapshot_tbl, &key, sizeof(key), snapshot);
-    if (snapshot == NULL || snapshot->tags == NULL) {
-        if (skip != NULL) {
-            *skip = true;
-        }
-        return 0;
+    if (NULL == plugin->client) {
+        rv = NEU_ERR_MQTT_IS_NULL;
+        goto end;
     }
 
-    int n_cached = HASH_COUNT(snapshot->tags);
-    json.n_tag   = n_cached + n_s_tags;
-    json.tags = calloc(json.n_tag, sizeof(neu_json_read_resp_tag_t));
-    if (json.tags == NULL) {
-        return -1;
+    if (0 == plugin->config.cache &&
+        !neu_mqtt_client_is_connected(plugin->client)) {
+        rv = NEU_ERR_MQTT_FAILURE;
+        goto end;
     }
 
-    int index = 0;
-    mqtt_snapshot_tag_t *tag = NULL, *tmp = NULL;
-    HASH_ITER(hh, snapshot->tags, tag, tmp)
+    if (ft_ctx->static_tags_json != NULL &&
+        ft_ctx->static_tags_json[0] != '\0') {
+        mqtt_static_validate(ft_ctx->static_tags_json, &static_tags,
+                             &n_static);
+    }
+
+    neu_reqresp_trans_data_t td = {
+        .driver = ft_ctx->driver,
+        .group  = ft_ctx->group,
+        .tags   = data->tags,
+    };
+
+    json_str = generate_upload_json(
+        plugin, &td, plugin->config.format, plugin->config.schema_vts,
+        plugin->config.n_schema_vt, static_tags, n_static, &skip);
+
+    if (n_static > 0) {
+        mqtt_static_free(static_tags, n_static);
+    }
+
+    if (skip) {
+        goto end;
+    }
+    if (NULL == json_str) {
+        plog_error(plugin,
+                   "full table publish generate json fail driver:%s group:%s",
+                   ft_ctx->driver, ft_ctx->group);
+        rv = NEU_ERR_EINTERNAL;
+        goto end;
+    }
+
     {
-        if (!plugin->config.upload_err && tag->error != 0) {
-            continue;
+        size_t         size = strlen(json_str);
+        neu_mqtt_qos_e qos  = plugin->config.qos;
+
+        if (plugin->config.version == NEU_MQTT_VERSION_V5 &&
+            ft_ctx->trace_parent[0] != '\0') {
+            rv = publish_with_trace(plugin, qos, ft_ctx->topic, json_str, size,
+                                    ft_ctx->trace_parent);
+        } else {
+            rv = publish(plugin, qos, ft_ctx->topic, json_str, size);
         }
-        json.tags[index].name      = tag->name;
-        json.tags[index].error     = tag->error;
-        json.tags[index].t         = tag->t;
-        json.tags[index].value     = tag->value;
-        json.tags[index].precision = tag->precision;
-        json.tags[index].datatag.bias = tag->bias;
-        index += 1;
-    }
-    for (size_t i = 0; i < n_s_tags; i++) {
-        json.tags[index].name  = s_tags[i].name;
-        json.tags[index].t     = s_tags[i].jtype;
-        json.tags[index].value = s_tags[i].jvalue;
-        index += 1;
-    }
-    json.n_tag = index;
-
-    if (json.n_tag == 0) {
-        free(json.tags);
-        if (skip != NULL) {
-            *skip = true;
-        }
-        return 0;
+        json_str = NULL;
     }
 
-    if (format == MQTT_UPLOAD_FORMAT_VALUES) {
-        neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp1, &header,
-                                  neu_json_encode_read_periodic_resp, json_str);
-    } else if (format == MQTT_UPLOAD_FORMAT_TAGS) {
-        neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp2, &header,
-                                  neu_json_encode_read_periodic_resp, json_str);
-    } else {
-        free(json.tags);
-        return -1;
-    }
+end:
+    mqtt_full_table_ctx_free(ft_ctx);
+    return rv;
+}
 
-    free(json.tags);
-    return 0;
+static inline bool mqtt_use_full_table_publish(neu_plugin_t *plugin)
+{
+    return plugin->config.full_table_on_change &&
+           plugin->config.format != MQTT_UPLOAD_FORMAT_PROTOBUF;
 }
 
 char *generate_upload_json(neu_plugin_t *plugin, neu_reqresp_trans_data_t *data,
@@ -1673,76 +1687,22 @@ int handle_trans_data(neu_plugin_t *            plugin,
                 free(data_report.tags[i]);
             }
             free(data_report.tags);
-        } else {
-            bool use_snapshot_publish =
-                plugin->config.full_table_on_change &&
-                (plugin->config.format == MQTT_UPLOAD_FORMAT_VALUES ||
-                 plugin->config.format == MQTT_UPLOAD_FORMAT_TAGS);
-            if (use_snapshot_publish) {
-                mqtt_snapshot_group_t *snapshot = get_or_create_snapshot_group(
-                    plugin, trans_data->driver, trans_data->group);
-                if (snapshot == NULL) {
-                    rv = NEU_ERR_EINTERNAL;
-                    break;
-                }
-
-                bool any_changed = false;
-                utarray_foreach(trans_data->tags, neu_resp_tag_value_meta_t *,
-                                tag_value)
-                {
-                    neu_json_read_resp_tag_t json_tag = { 0 };
-                    neu_tag_value_to_json(tag_value, &json_tag);
-                    if (plugin->config.compare_by_rounded_float &&
-                        json_tag.error == 0) {
-                        if (json_tag.t == NEU_JSON_FLOAT) {
-                            json_tag.value.val_float = (float) round_to_digits(
-                                json_tag.value.val_float,
-                                plugin->config.float_round_digits);
-                        } else if (json_tag.t == NEU_JSON_DOUBLE) {
-                            json_tag.value.val_double = round_to_digits(
-                                json_tag.value.val_double,
-                                plugin->config.float_round_digits);
-                        }
-                    }
-
-                    mqtt_snapshot_tag_t *cached = NULL;
-                    HASH_FIND_STR(snapshot->tags, json_tag.name, cached);
-                    if (cached == NULL ||
-                        !snapshot_tag_value_equal(cached, &json_tag)) {
-                        any_changed = true;
-                    }
-
-                    if (0 != snapshot_upsert_tag(snapshot, &json_tag)) {
-                        if (json_tag.n_meta > 0) {
-                            free(json_tag.metas);
-                        }
-                        rv = NEU_ERR_EINTERNAL;
-                        break;
-                    }
-
-                    if (json_tag.n_meta > 0) {
-                        free(json_tag.metas);
-                    }
-                }
-                if (rv != 0) {
-                    break;
-                }
-
-                if (!any_changed) {
-                    skip_none = true;
-                } else if (0 != build_snapshot_json(
-                                    plugin, trans_data, plugin->config.format,
-                                    static_tags, n_satic_tag, &json_str,
-                                    &skip_none)) {
-                    rv = NEU_ERR_EINTERNAL;
-                    break;
-                }
-            } else {
-                json_str = generate_upload_json(
-                    plugin, trans_data, plugin->config.format,
-                    plugin->config.schema_vts, plugin->config.n_schema_vt,
-                    static_tags, n_satic_tag, &skip_none);
+        } else if (mqtt_use_full_table_publish(plugin)) {
+            if (0 != mqtt_request_full_table_publish(
+                    plugin, trans_data->driver, trans_data->group,
+                    route->topic,
+                    route->static_tags != NULL ? route->static_tags : "",
+                    (trans_trace && trace_parent[0] != '\0') ? trace_parent
+                                                             : NULL)) {
+                rv = NEU_ERR_EINTERNAL;
+                break;
             }
+            skip_none = true;
+        } else {
+            json_str = generate_upload_json(
+                plugin, trans_data, plugin->config.format,
+                plugin->config.schema_vts, plugin->config.n_schema_vt,
+                static_tags, n_satic_tag, &skip_none);
             if (json_str != NULL) {
                 size = strlen(json_str);
             }
@@ -1824,6 +1784,20 @@ int handle_subscribe_group(neu_plugin_t *plugin, neu_req_subscribe_t *sub_info)
 
     plog_notice(plugin, "route driver:%s group:%s to topic:%s",
                 sub_info->driver, sub_info->group, topic.v.val_str);
+
+    if (0 == rv && mqtt_use_full_table_publish(plugin)) {
+        const route_entry_t *route =
+            route_tbl_get(&plugin->route_tbl, sub_info->driver, sub_info->group);
+        if (route != NULL &&
+            0 != mqtt_request_full_table_publish(
+                     plugin, sub_info->driver, sub_info->group, route->topic,
+                     route->static_tags != NULL ? route->static_tags : "",
+                     NULL)) {
+            plog_warn(plugin,
+                      "initial full table publish failed driver:%s group:%s",
+                      sub_info->driver, sub_info->group);
+        }
+    }
 
 end:
     free(sub_info->params);

@@ -250,6 +250,32 @@ plugin-opcua/fast:
 .PHONY : plugin-opcua/fast
 
 #=============================================================================
+# Target rules for targets named plugin-s7comm
+
+# Build rule for target.
+plugin-s7comm: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 plugin-s7comm
+.PHONY : plugin-s7comm
+
+# fast build rule for target.
+plugin-s7comm/fast:
+	$(MAKE) $(MAKESILENT) -f plugins/s7/CMakeFiles/plugin-s7comm.dir/build.make plugins/s7/CMakeFiles/plugin-s7comm.dir/build
+.PHONY : plugin-s7comm/fast
+
+#=============================================================================
+# Target rules for targets named plugin-s7comm_for_300
+
+# Build rule for target.
+plugin-s7comm_for_300: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 plugin-s7comm_for_300
+.PHONY : plugin-s7comm_for_300
+
+# fast build rule for target.
+plugin-s7comm_for_300/fast:
+	$(MAKE) $(MAKESILENT) -f plugins/s7/CMakeFiles/plugin-s7comm_for_300.dir/build.make plugins/s7/CMakeFiles/plugin-s7comm_for_300.dir/build
+.PHONY : plugin-s7comm_for_300/fast
+
+#=============================================================================
 # Target rules for targets named plugin-mqtt
 
 # Build rule for target.
@@ -2500,6 +2526,8 @@ help:
 	@echo "... plugin-opcua"
 	@echo "... plugin-s1"
 	@echo "... plugin-s1_2"
+	@echo "... plugin-s7comm"
+	@echo "... plugin-s7comm_for_300"
 	@echo "... plugin-sc1"
 	@echo "... plugin-sc1_2"
 	@echo "... plugins/restful/adapter_handle.o"

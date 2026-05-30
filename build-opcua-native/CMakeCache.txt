@@ -334,6 +334,12 @@ CURL_LIBRARY_DEBUG:FILEPATH=CURL_LIBRARY_DEBUG-NOTFOUND
 //Path to a library.
 CURL_LIBRARY_RELEASE:FILEPATH=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/lib/libcurl.tbd
 
+//Disable datalayers plugin build
+DISABLE_DATALAYERS:BOOL=OFF
+
+//Disable Siemens S7 plugin build
+DISABLE_S7:BOOL=OFF
+
 //No help, variable specified on the command line.
 DISABLE_UT:UNINITIALIZED=ON
 
@@ -372,6 +378,12 @@ PKG_CONFIG_EXECUTABLE:FILEPATH=/opt/homebrew/bin/pkg-config
 
 //The directory containing a CMake configuration file for Protobuf.
 Protobuf_DIR:PATH=/opt/homebrew/lib/cmake/protobuf
+
+//Path to a file.
+SNAP7_INCLUDE_DIR:PATH=/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/plugins/s7
+
+//Path to a library.
+SNAP7_LIBRARY:FILEPATH=/tmp/snap7/build/bin/x86_64-osx/libsnap7.dylib
 
 //The directory containing a CMake configuration file for Snappy.
 Snappy_DIR:PATH=/opt/homebrew/lib/cmake/Snappy
@@ -742,7 +754,7 @@ CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_NM
 CMAKE_NM-ADVANCED:INTERNAL=1
 //number of local generators
-CMAKE_NUMBER_OF_MAKEFILES:INTERNAL=14
+CMAKE_NUMBER_OF_MAKEFILES:INTERNAL=15
 //ADVANCED property for variable: CMAKE_OBJCOPY
 CMAKE_OBJCOPY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_OBJDUMP
@@ -1052,7 +1064,7 @@ pkgcfg_lib_RDKAFKA_rdkafka-ADVANCED:INTERNAL=1
 pkgcfg_lib__OPENSSL_crypto-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: pkgcfg_lib__OPENSSL_ssl
 pkgcfg_lib__OPENSSL_ssl-ADVANCED:INTERNAL=1
-prefix_result:INTERNAL=/opt/homebrew/Cellar/librdkafka/2.14.1/lib
+prefix_result:INTERNAL=alt-svc;AsynchDNS;GSS-API;HSTS;HTTP2;HTTPS-proxy;IPv6;Kerberos;Largefile;libz;MultiSSL;NTLM;SPNEGO;SSL;threadsafe;UnixSockets
 //ADVANCED property for variable: protobuf_MODULE_COMPATIBLE
 protobuf_MODULE_COMPATIBLE-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: protobuf_VERBOSE

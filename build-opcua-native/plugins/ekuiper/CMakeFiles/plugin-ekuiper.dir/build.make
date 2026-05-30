@@ -130,6 +130,7 @@ plugins/libplugin-ekuiper.dylib: plugins/ekuiper/CMakeFiles/plugin-ekuiper.dir/b
 plugins/libplugin-ekuiper.dylib: libneuron-base.dylib
 plugins/libplugin-ekuiper.dylib: /opt/homebrew/Cellar/openssl@3/3.6.2/lib/libssl.a
 plugins/libplugin-ekuiper.dylib: /opt/homebrew/Cellar/openssl@3/3.6.2/lib/libcrypto.a
+plugins/libplugin-ekuiper.dylib: /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/lib/libxml2.tbd
 plugins/libplugin-ekuiper.dylib: plugins/ekuiper/CMakeFiles/plugin-ekuiper.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Linking C shared library ../libplugin-ekuiper.dylib"
 	cd /Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/plugins/ekuiper && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/plugin-ekuiper.dir/link.txt --verbose=$(VERBOSE)

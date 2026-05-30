@@ -109,6 +109,39 @@
 		"default": true,
 		"valid": {}
 	},
+	"full-table-on-change": {
+		"name": "Full Table On Change",
+		"name_zh": "变化时上报全表",
+		"description": "When enabled, publish the full latest table of a subscribed group whenever any tag value changes.",
+		"description_zh": "开启后，只要组内任一点位变化，就上报该组最新全量数据。",
+		"attribute": "optional",
+		"type": "bool",
+		"default": false,
+		"valid": {}
+	},
+	"compare-by-rounded-float": {
+		"name": "Compare Rounded Float",
+		"name_zh": "按舍入浮点比较",
+		"description": "Compare FLOAT/DOUBLE values after rounding to configured digits when deciding whether data changed.",
+		"description_zh": "判断数据变化时，先将 FLOAT/DOUBLE 按配置位数四舍五入再比较。",
+		"attribute": "optional",
+		"type": "bool",
+		"default": true,
+		"valid": {}
+	},
+	"float-round-digits": {
+		"name": "Float Round Digits",
+		"name_zh": "浮点舍入位数",
+		"description": "Decimal digits used for float rounding before change detection.",
+		"description_zh": "变化检测前对浮点数进行舍入时使用的小数位数。",
+		"attribute": "optional",
+		"type": "int",
+		"default": 2,
+		"valid": {
+			"min": 0,
+			"max": 8
+		}
+	},
 	"enable_topic": {
 		"name": "Enable driver topic",
 		"name_zh": "启动驱动相关主题",

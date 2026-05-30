@@ -196,6 +196,10 @@ file(COPY ${CMAKE_SOURCE_DIR}/default_plugins.json DESTINATION ${CMAKE_BINARY_DI
 
 add_subdirectory(plugins/modbus)
 add_subdirectory(plugins/opcua)
+option(DISABLE_S7 "Disable Siemens S7 plugin build" OFF)
+if(NOT DISABLE_S7)
+  add_subdirectory(plugins/s7)
+endif()
 add_subdirectory(plugins/mqtt)
 add_subdirectory(plugins/ekuiper)
 add_subdirectory(plugins/file)

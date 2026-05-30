@@ -536,8 +536,15 @@ int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
 
     switch (head->type) {
     case NEU_RESP_ERROR:
-        error = handle_write_response(plugin, head->ctx, data, scope, trace,
-                                      new_span_id);
+        if (mqtt_full_table_ctx_is(head->ctx)) {
+            plog_warn(plugin, "full table read failed");
+            mqtt_full_table_ctx_destroy(head->ctx);
+            head->ctx = NULL;
+            error     = ((neu_resp_error_t *) data)->error;
+        } else {
+            error = handle_write_response(plugin, head->ctx, data, scope, trace,
+                                          new_span_id);
+        }
         break;
     case NEU_RESP_WRITE_TAGS:
         error = handle_write_tags_response(plugin, head->ctx, data);
@@ -565,7 +572,12 @@ int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
         break;
     }
     case NEU_RESP_READ_GROUP:
-        error = handle_read_response(plugin, head->ctx, data);
+        if (mqtt_full_table_ctx_is(head->ctx)) {
+            error = handle_full_table_read_response(
+                plugin, (mqtt_full_table_ctx_t *) head->ctx, data);
+        } else {
+            error = handle_read_response(plugin, head->ctx, data);
+        }
         break;
     case NEU_REQRESP_TRANS_DATA: {
         if (plugin->client && neu_mqtt_client_is_open(plugin->client)) {

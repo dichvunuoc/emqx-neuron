@@ -52,6 +52,16 @@ void handle_read_req(neu_mqtt_qos_e qos, const char *topic,
 int handle_read_response(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt_json,
                          neu_resp_read_group_t *data);
 
+/** Context for async full-table publish (see mqtt_full_table_ctx_magic). */
+typedef struct mqtt_full_table_ctx mqtt_full_table_ctx_t;
+
+uint32_t mqtt_full_table_ctx_magic(void);
+bool     mqtt_full_table_ctx_is(void *ctx);
+void     mqtt_full_table_ctx_destroy(void *ctx);
+int handle_full_table_read_response(neu_plugin_t *         plugin,
+                                    mqtt_full_table_ctx_t *ctx,
+                                    neu_resp_read_group_t * data);
+
 void handle_driver_action_req(neu_mqtt_qos_e qos, const char *topic,
                               const uint8_t *payload, uint32_t len, void *data,
                               trace_w3c_t *trace_w3c);

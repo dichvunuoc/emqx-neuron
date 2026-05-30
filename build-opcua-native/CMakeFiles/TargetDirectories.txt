@@ -25,6 +25,15 @@
 /Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/plugins/opcua/CMakeFiles/install.dir
 /Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/plugins/opcua/CMakeFiles/install/local.dir
 /Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/plugins/opcua/CMakeFiles/install/strip.dir
+/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/plugins/s7/CMakeFiles/plugin-s7comm.dir
+/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/plugins/s7/CMakeFiles/plugin-s7comm_for_300.dir
+/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/plugins/s7/CMakeFiles/test.dir
+/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/plugins/s7/CMakeFiles/edit_cache.dir
+/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/plugins/s7/CMakeFiles/rebuild_cache.dir
+/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/plugins/s7/CMakeFiles/list_install_components.dir
+/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/plugins/s7/CMakeFiles/install.dir
+/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/plugins/s7/CMakeFiles/install/local.dir
+/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/plugins/s7/CMakeFiles/install/strip.dir
 /Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/plugins/mqtt/CMakeFiles/plugin-mqtt.dir
 /Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/plugins/mqtt/CMakeFiles/plugin-aws-iot.dir
 /Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/plugins/mqtt/CMakeFiles/plugin-azure-iot.dir

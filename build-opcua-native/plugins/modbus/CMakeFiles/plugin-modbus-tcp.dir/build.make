@@ -162,6 +162,7 @@ plugins/libplugin-modbus-tcp.dylib: plugins/modbus/CMakeFiles/plugin-modbus-tcp.
 plugins/libplugin-modbus-tcp.dylib: libneuron-base.dylib
 plugins/libplugin-modbus-tcp.dylib: /opt/homebrew/Cellar/openssl@3/3.6.2/lib/libssl.a
 plugins/libplugin-modbus-tcp.dylib: /opt/homebrew/Cellar/openssl@3/3.6.2/lib/libcrypto.a
+plugins/libplugin-modbus-tcp.dylib: /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/lib/libxml2.tbd
 plugins/libplugin-modbus-tcp.dylib: plugins/modbus/CMakeFiles/plugin-modbus-tcp.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Linking C shared library ../libplugin-modbus-tcp.dylib"
 	cd /Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/plugins/modbus && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/plugin-modbus-tcp.dir/link.txt --verbose=$(VERBOSE)

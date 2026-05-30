@@ -98,6 +98,7 @@ tests/plugins/libplugin-demo_app.dylib: tests/plugins/demo_app/CMakeFiles/plugin
 tests/plugins/libplugin-demo_app.dylib: libneuron-base.dylib
 tests/plugins/libplugin-demo_app.dylib: /opt/homebrew/Cellar/openssl@3/3.6.2/lib/libssl.a
 tests/plugins/libplugin-demo_app.dylib: /opt/homebrew/Cellar/openssl@3/3.6.2/lib/libcrypto.a
+tests/plugins/libplugin-demo_app.dylib: /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/lib/libxml2.tbd
 tests/plugins/libplugin-demo_app.dylib: tests/plugins/demo_app/CMakeFiles/plugin-demo_app.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking C shared library ../libplugin-demo_app.dylib"
 	cd /Users/dannv/Workspace/SYSTEMS/emqx:clone/emqx-neuron/build-opcua-native/tests/plugins/demo_app && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/plugin-demo_app.dir/link.txt --verbose=$(VERBOSE)

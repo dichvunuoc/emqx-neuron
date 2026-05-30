@@ -78,6 +78,17 @@ RUN rm -rf /tmp/open62541 && \
     cmake --install . && \
     ldconfig
 
+# Snap7 (LGPL) for Siemens S7 southbound plugins. On aarch64 the makefile name is
+# historical; the produced lib matches the builder architecture.
+ARG SNAP7_REPO=https://github.com/gijzelaerr/snap7.git
+RUN rm -rf /tmp/snap7 && \
+    git clone --depth 1 "${SNAP7_REPO}" /tmp/snap7 && \
+    cd /tmp/snap7/build/unix && \
+    make -f x86_64_linux.mk -j"$(nproc)" && \
+    cp /tmp/snap7/build/bin/x86_64-linux/libsnap7.so /usr/local/lib/ && \
+    cp /tmp/snap7/release/Wrappers/c-cpp/snap7.h /usr/local/include/ && \
+    ldconfig
+
 WORKDIR /workspace
 COPY . .
 
@@ -113,6 +124,7 @@ COPY --from=builder /usr/local/lib/libzlog.so* /usr/local/lib/
 COPY --from=builder /usr/local/lib/libjansson.so* /usr/local/lib/
 COPY --from=builder /usr/local/lib/libjwt.so* /usr/local/lib/
 COPY --from=builder /usr/local/lib/libnng.so* /usr/local/lib/
+COPY --from=builder /usr/local/lib/libsnap7.so* /usr/local/lib/
 COPY --from=builder /workspace/build-docker-cm4/neuron ./
 COPY --from=builder /workspace/build-docker-cm4/libneuron-base.so ./
 COPY --from=builder /workspace/build-docker-cm4/plugins ./plugins/

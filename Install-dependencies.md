@@ -106,3 +106,16 @@ When enabling DARROW_FLIGHT and DARROW_FLIGHT_SQL, you must ensure the following
 gRPC \
 Boost \
 Thrift
+
+[snap7](https://sourceforge.net/projects/snap7/) (LGPLv3, required for Siemens S7 plugins)
+
+```shell
+$ git clone https://github.com/gijzelaerr/snap7.git
+$ cd snap7/build/osx && make -f x86_64_osx.mk   # macOS Apple Silicon / Intel
+# Linux: cd snap7/build/unix && make -f x86_64_linux.mk
+$ sudo cp ../../release/Wrappers/c-cpp/snap7.h /usr/local/include/
+$ sudo cp ../bin/x86_64-osx/libsnap7.dylib /usr/local/lib/   # or libsnap7.so on Linux
+```
+
+Set `SNAP7_ROOT` to the snap7 source tree if headers/libs are not under `/usr/local`.
+To build Neuron without S7: `cmake -DDISABLE_S7=ON ..`

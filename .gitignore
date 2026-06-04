@@ -27,3 +27,13 @@ build-native-cm4/core
 
 # minipc-bundle-pack.sh output (compose + scripts + optional image tar)
 dist/
+
+# Build artifacts / image stacks packed for offline mini PC install.
+# These routinely exceed GitHub's 100MB push limit; keep them local only.
+neuron-stack-*.tar
+neuron-stack-*.tar.gz
+neuron-*-bundle.tar
+neuron-*-bundle.tar.gz
+neuron-full-*.tar
+neuron-cm4-*.tar
+*.img

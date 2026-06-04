@@ -383,6 +383,38 @@ static void directory_response(neu_adapter_t *adapter, void *r, int error,
     adapter->cb_funs.response(adapter, req, &resp);
 }
 
+// Look up the configured precision for a tag so that change detection in
+// neu_driver_cache_update_change can use a proper threshold instead of the
+// bit-exact != comparison that fires when dvalue.precision is left at 0.
+// This is needed because south plugins (modbus, s7, opcua, ...) currently
+// do not propagate tag->precision into neu_dvalue_t.
+static inline uint8_t driver_lookup_tag_precision(neu_adapter_t *adapter,
+                                                   const char *   group,
+                                                   const char *   tag)
+{
+    neu_adapter_driver_t *driver    = (neu_adapter_driver_t *) adapter;
+    neu_datatag_t *       found_tag = NULL;
+    group_t *             g         = NULL;
+    uint8_t               precision = 0;
+
+    if (group == NULL || tag == NULL) {
+        return 0;
+    }
+
+    HASH_FIND_STR(driver->groups, group, g);
+    if (g == NULL) {
+        return 0;
+    }
+
+    found_tag = neu_group_find_tag(g->group, tag);
+    if (found_tag != NULL) {
+        precision = found_tag->precision;
+        neu_tag_free(found_tag);
+    }
+
+    return precision;
+}
+
 static void update_with_meta(neu_adapter_t *adapter, const char *group,
                              const char *tag, neu_dvalue_t value,
                              neu_tag_meta_t *metas, int n_meta)
@@ -417,6 +449,12 @@ static void update_with_meta(neu_adapter_t *adapter, const char *group,
             utarray_free(tags);
         }
     } else {
+        // Apply configured precision if the plugin did not set it, so float
+        // change detection uses the configured threshold instead of bit-exact.
+        if (value.precision == 0 && tag != NULL) {
+            value.precision =
+                driver_lookup_tag_precision(adapter, group, tag);
+        }
         neu_driver_cache_update(driver->cache, group, tag, global_timestamp,
                                 value, metas, n_meta);
         update_metric(&driver->adapter, NEU_METRIC_TAG_READS_TOTAL, 1, NULL);
@@ -463,6 +501,11 @@ static void update_im_f_m(neu_adapter_t *adapter, const char *group,
         return;
     }
 
+    // Apply configured precision if the plugin did not set it.
+    if (value.precision == 0) {
+        value.precision =
+            driver_lookup_tag_precision(adapter, group, tag);
+    }
     bool changed = neu_driver_cache_update_change(driver->cache, group, tag,
                                                   global_timestamp, value,
                                                   metas, n_meta, false);

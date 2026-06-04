@@ -19,6 +19,26 @@
 
 #define S7_DEFAULT_SLOT 1
 
+static void s7_update_rtt_metric(neu_plugin_t *plugin, int64_t rtt_ms)
+{
+    neu_adapter_update_metric_cb_t update_metric = NULL;
+
+    if (plugin == NULL || plugin->common.adapter_callbacks == NULL) {
+        return;
+    }
+    update_metric = plugin->common.adapter_callbacks->update_metric;
+    if (update_metric == NULL) {
+        return;
+    }
+    if (rtt_ms < 0) {
+        rtt_ms = 0;
+    }
+    if (rtt_ms > NEU_METRIC_LAST_RTT_MS_MAX) {
+        rtt_ms = NEU_METRIC_LAST_RTT_MS_MAX;
+    }
+    update_metric(plugin->common.adapter, NEU_METRIC_LAST_RTT_MS, rtt_ms, NULL);
+}
+
 static int snap7_area_from_parsed(const s7_parsed_addr_t *addr)
 {
 #if defined(NEU_S7_HAS_SNAP7) && NEU_S7_HAS_SNAP7
@@ -243,6 +263,7 @@ void s7_disconnect(neu_plugin_t *plugin)
 #endif
     plugin->connected         = false;
     plugin->common.link_state = NEU_NODE_LINK_STATE_DISCONNECTED;
+    s7_update_rtt_metric(plugin, NEU_METRIC_LAST_RTT_MS_MAX);
 }
 
 int s7_connect(neu_plugin_t *plugin)
@@ -606,11 +627,20 @@ int s7_driver_validate_tag(neu_plugin_t *plugin, neu_datatag_t *tag)
 
 int s7_driver_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group)
 {
+    int64_t t0 = 0;
+    int64_t rtt = 0;
+    int     ret = 0;
+
     if (!plugin->connected) {
         s7_publish_err(plugin, group, NEU_ERR_S7COMM_DISCONNECTED);
+        s7_update_rtt_metric(plugin, NEU_METRIC_LAST_RTT_MS_MAX);
         return 0;
     }
-    return s7_group_read(plugin, group);
+    t0  = neu_time_ms();
+    ret = s7_group_read(plugin, group);
+    rtt = neu_time_ms() - t0;
+    s7_update_rtt_metric(plugin, rtt);
+    return ret;
 }
 
 int s7_driver_write(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,

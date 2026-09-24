@@ -35,8 +35,28 @@ else()
   string(STRIP "${GIT_BRANCH}" GIT_BRANCH)
 endif()
 
+# Container/release builds exclude .git from the build context. Allow the
+# release pipeline to inject the same revision that is written to OCI labels.
+if (DEFINED NEURON_VCS_REF AND
+    NOT "${NEURON_VCS_REF}" STREQUAL "" AND
+    NOT "${NEURON_VCS_REF}" STREQUAL "unknown")
+  set(GIT_REV "${NEURON_VCS_REF}")
+  set(GIT_DIFF "")
+endif()
+
 # build date
-string(TIMESTAMP NEURON_BUILD_DATE "%Y-%m-%d")
+if (DEFINED NEURON_BUILD_DATE_OVERRIDE AND
+    NOT "${NEURON_BUILD_DATE_OVERRIDE}" STREQUAL "" AND
+    NOT "${NEURON_BUILD_DATE_OVERRIDE}" STREQUAL "unknown")
+  string(LENGTH "${NEURON_BUILD_DATE_OVERRIDE}" BUILD_DATE_LENGTH)
+  if (BUILD_DATE_LENGTH GREATER_EQUAL 10)
+    string(SUBSTRING "${NEURON_BUILD_DATE_OVERRIDE}" 0 10 NEURON_BUILD_DATE)
+  else()
+    set(NEURON_BUILD_DATE "${NEURON_BUILD_DATE_OVERRIDE}")
+  endif()
+else()
+  string(TIMESTAMP NEURON_BUILD_DATE "%Y-%m-%d")
+endif()
 
 # generate the header file
 configure_file(${HEADER_TMPL} ${HEADER_FILE} @ONLY)

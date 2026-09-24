@@ -514,9 +514,17 @@ def main() -> int:
     )
     parser.add_argument("--gateway-id", required=True)
     parser.add_argument("--neuron-base-url", default="http://127.0.0.1:7000")
-    parser.add_argument("--neuron-token", required=True)
+    parser.add_argument(
+        "--neuron-token",
+        default=os.environ.get("REMOTE_NEURON_TOKEN", ""),
+        help="Neuron JWT; defaults to REMOTE_NEURON_TOKEN",
+    )
     parser.add_argument("--policy-version", default="v1")
-    parser.add_argument("--hmac-secret", default="", help="Shared secret for x-signature verification")
+    parser.add_argument(
+        "--hmac-secret",
+        default=os.environ.get("REMOTE_HMAC_SECRET", ""),
+        help="Shared secret for x-signature verification; defaults to REMOTE_HMAC_SECRET",
+    )
 
     parser.add_argument("--command", help="Path to command envelope JSON (single execution mode)")
     parser.add_argument("--signature", help="HMAC signature for --command payload")

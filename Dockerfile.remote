@@ -1,0 +1,224 @@
+# syntax=docker/dockerfile:1.7
+# Public all-in-one image: Neuron + remote backend + same-origin Nginx proxy.
+# Build one host architecture for local testing:
+#   docker buildx build --platform linux/arm64 -f Dockerfile.remote -t neuron-remote:test --load .
+# Publish a multi-platform manifest:
+#   docker buildx build --platform linux/amd64,linux/arm64 -f Dockerfile.remote \
+#     -t dannvhy/neuron-remote:VERSION --push .
+
+FROM --platform=$BUILDPLATFORM node:18-bookworm AS dashboard
+WORKDIR /app
+COPY neuron-dashboard/package.json neuron-dashboard/yarn.lock ./
+ENV NODE_OPTIONS=--openssl-legacy-provider
+RUN yarn install --frozen-lockfile --network-timeout 300000
+COPY neuron-dashboard/ .
+RUN yarn build && \
+    yarn licenses generate-disclaimer > /tmp/npm-THIRD-PARTY-NOTICES.txt && \
+    yarn licenses list --json > /tmp/npm-licenses.json
+
+FROM ubuntu:22.04 AS builder
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update -qq && apt-get install -y -qq \
+    build-essential cmake git pkg-config ca-certificates curl python3 \
+    libssl-dev libxml2-dev libmbedtls-dev libsqlite3-dev \
+    libprotobuf-c-dev librdkafka-dev zlib1g-dev && \
+    rm -rf /var/lib/apt/lists/*
+
+ARG ZLOG_TAG=1.2.15
+RUN git clone --depth 1 --branch "${ZLOG_TAG}" \
+      https://github.com/HardySimpson/zlog.git /tmp/zlog && \
+    make -C /tmp/zlog -j"$(nproc)" && \
+    make -C /tmp/zlog install && \
+    ldconfig
+
+ARG JANSSON_REF=99b46bb44bfb9586b232d094f1da96f2660e0341
+RUN git clone https://github.com/neugates/jansson.git /tmp/jansson && \
+    git -C /tmp/jansson checkout "${JANSSON_REF}" && \
+    cmake -S /tmp/jansson -B /tmp/jansson/build \
+      -DJANSSON_BUILD_DOCS=OFF \
+      -DJANSSON_EXAMPLES=OFF && \
+    cmake --build /tmp/jansson/build -j"$(nproc)" && \
+    cmake --install /tmp/jansson/build && \
+    ldconfig
+
+ARG LIBJWT_TAG=v1.13.1
+RUN git clone --depth 1 --branch "${LIBJWT_TAG}" \
+      https://github.com/benmcollins/libjwt.git /tmp/libjwt && \
+    cmake -S /tmp/libjwt -B /tmp/libjwt/build \
+      -DENABLE_PIC=ON \
+      -DBUILD_SHARED_LIBS=ON && \
+    cmake --build /tmp/libjwt/build -j"$(nproc)" && \
+    cmake --install /tmp/libjwt/build && \
+    ldconfig
+
+ARG NANOSDK_REF=4fd7ffa90f6e1d42b0017b0fed47fbc6db92002b
+RUN git clone https://github.com/neugates/NanoSDK.git /tmp/NanoSDK && \
+    git -C /tmp/NanoSDK checkout "${NANOSDK_REF}" && \
+    cmake -S /tmp/NanoSDK -B /tmp/NanoSDK/build \
+      -DBUILD_SHARED_LIBS=ON \
+      -DNNG_TESTS=OFF \
+      -DNNG_ENABLE_MQTT=ON \
+      -DNNG_ENABLE_SQLITE=ON \
+      -DNNG_ENABLE_TLS=ON && \
+    cmake --build /tmp/NanoSDK/build -j"$(nproc)" && \
+    cmake --install /tmp/NanoSDK/build && \
+    ldconfig
+
+ARG O62541_TAG=v1.4.6
+RUN git clone --depth 1 --branch "${O62541_TAG}" \
+      https://github.com/open62541/open62541.git /tmp/open62541 && \
+    cmake -S /tmp/open62541 -B /tmp/open62541/build \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DBUILD_SHARED_LIBS=ON \
+      -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF && \
+    cmake --build /tmp/open62541/build -j"$(nproc)" && \
+    cmake --install /tmp/open62541/build && \
+    ldconfig
+
+ARG SNAP7_REF=cc78b9f942712f07ce084c11defe87da240d8e44
+RUN git clone https://github.com/gijzelaerr/snap7.git /tmp/snap7 && \
+    git -C /tmp/snap7 checkout "${SNAP7_REF}" && \
+    make -C /tmp/snap7/build/unix -f x86_64_linux.mk -j"$(nproc)" && \
+    cp /tmp/snap7/build/bin/x86_64-linux/libsnap7.so /usr/local/lib/ && \
+    cp /tmp/snap7/release/Wrappers/c-cpp/snap7.h /usr/local/include/ && \
+    ldconfig
+
+RUN set -eux; \
+    license_dir=/opt/third-party-licenses; \
+    install -Dm0644 /tmp/open62541/LICENSE "${license_dir}/open62541/LICENSE"; \
+    install -Dm0644 /tmp/open62541/LICENSE-CC0 "${license_dir}/open62541/LICENSE-CC0"; \
+    install -Dm0644 /tmp/open62541/tools/packaging/debian/copyright "${license_dir}/open62541/copyright"; \
+    install -Dm0644 /usr/share/common-licenses/Apache-2.0 "${license_dir}/open62541/Apache-2.0"; \
+    install -Dm0644 /tmp/snap7/lgpl-3.0.txt "${license_dir}/snap7/lgpl-3.0.txt"; \
+    install -Dm0644 /tmp/snap7/gpl.txt "${license_dir}/snap7/gpl.txt"; \
+    install -Dm0644 /tmp/zlog/COPYING "${license_dir}/zlog/COPYING"; \
+    install -Dm0644 /tmp/jansson/LICENSE "${license_dir}/jansson/LICENSE"; \
+    install -Dm0644 /tmp/libjwt/LICENSE "${license_dir}/libjwt/LICENSE"; \
+    install -Dm0644 /tmp/NanoSDK/LICENSE.txt "${license_dir}/NanoSDK/LICENSE.txt"
+
+# Keep immutable source snapshots for every library built from source. The
+# public image therefore remains self-contained for LGPL/MPL source requests
+# even if an upstream repository later moves or disappears.
+RUN set -eux; \
+    source_dir=/opt/corresponding-source; \
+    install -d "${source_dir}"; \
+    git -C /tmp/zlog archive --format=tar.gz --output="${source_dir}/zlog-1.2.15.tar.gz" HEAD; \
+    git -C /tmp/jansson archive --format=tar.gz --output="${source_dir}/jansson-99b46bb44bfb.tar.gz" HEAD; \
+    git -C /tmp/libjwt archive --format=tar.gz --output="${source_dir}/libjwt-v1.13.1.tar.gz" HEAD; \
+    git -C /tmp/NanoSDK archive --format=tar.gz --output="${source_dir}/NanoSDK-4fd7ffa90f6e.tar.gz" HEAD; \
+    git -C /tmp/open62541 archive --format=tar.gz --output="${source_dir}/open62541-v1.4.6.tar.gz" HEAD; \
+    git -C /tmp/snap7 archive --format=tar.gz --output="${source_dir}/snap7-cc78b9f94271.tar.gz" HEAD
+
+ARG VCS_REF=unknown
+ARG BUILD_DATE=unknown
+WORKDIR /workspace
+COPY . .
+RUN tar --exclude='./build-docker-remote' \
+        --exclude='./neuron-dashboard.zip' \
+        -czf /opt/corresponding-source/neuron-remote-source.tar.gz \
+        -C /workspace .
+RUN cmake -S . -B build-docker-remote \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DDISABLE_UT=ON \
+      -DDISABLE_ASAN=ON \
+      -DDISABLE_WERROR=ON \
+      -DDISABLE_DATALAYERS=ON \
+      -DNEURON_VCS_REF="${VCS_REF}" \
+      -DNEURON_BUILD_DATE_OVERRIDE="${BUILD_DATE}" \
+      -DCMAKE_PREFIX_PATH=/usr/local \
+      -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF && \
+    cmake --build build-docker-remote -j2
+COPY --from=dashboard /app/dist /workspace/build-docker-remote/dist
+
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    REMOTE_PROFILE_PATH=/data/remote-stub/connection-profile.json \
+    REMOTE_CONNECTION_SCHEMA=/opt/neuron-remote/contracts/connection-profile.schema.json \
+    REMOTE_AGENT_SCRIPT=/opt/neuron-remote/agent/gateway_agent.py \
+    REMOTE_SCHEMA_PATH=/opt/neuron-remote/contracts/command-envelope.schema.json \
+    REMOTE_NEURON_BASE_URL=http://127.0.0.1:7000
+
+RUN apt-get update -qq && apt-get install -y -qq --no-install-recommends \
+    ca-certificates gosu nginx python3 python3-pip supervisor tini wget \
+    libssl3 libxml2 libsqlite3-0 libmbedcrypto7 libmbedtls14 libmbedx509-1 \
+    libprotobuf-c1 librdkafka1 && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY scripts/neuron-remote-control/backend-stub/requirements.lock /tmp/requirements.lock
+RUN python3 -m pip install --no-cache-dir -r /tmp/requirements.lock && \
+    rm -f /tmp/requirements.lock
+
+WORKDIR /opt/neuron
+COPY --from=builder /usr/local/lib/libopen62541.so* /usr/local/lib/
+COPY --from=builder /usr/local/lib/libzlog.so* /usr/local/lib/
+COPY --from=builder /usr/local/lib/libjansson.so* /usr/local/lib/
+COPY --from=builder /usr/local/lib/libjwt.so* /usr/local/lib/
+COPY --from=builder /usr/local/lib/libnng.so* /usr/local/lib/
+COPY --from=builder /usr/local/lib/libsnap7.so* /usr/local/lib/
+COPY --from=builder /workspace/build-docker-remote/neuron ./
+COPY --from=builder /workspace/build-docker-remote/libneuron-base.so ./
+COPY --from=builder /workspace/build-docker-remote/plugins ./plugins/
+COPY --from=builder /workspace/build-docker-remote/config /opt/neuron-defaults/config
+COPY --from=builder /workspace/build-docker-remote/dist ./dist/
+
+# Port 502 requires root. The container runs Neuron as UID 10001, so the
+# bundled simulator uses an unprivileged port while real TCP drivers remain
+# free to connect to field devices on their configured ports.
+RUN sed -i 's/"modbus_simulator": { "port":502 }/"modbus_simulator": { "port":1502 }/' \
+      /opt/neuron-defaults/config/neuron.json
+
+COPY scripts/neuron-remote-control/backend-stub /opt/neuron-remote/backend-stub
+COPY scripts/neuron-remote-control/contracts /opt/neuron-remote/contracts
+COPY scripts/neuron-remote-control/agent /opt/neuron-remote/agent
+COPY LICENSE /usr/share/licenses/neuron/LICENSE
+COPY --from=builder /usr/share/common-licenses/GPL-3 /usr/share/licenses/neuron/GPL-3.0.txt
+COPY deploy/dockerhub/THIRD_PARTY_NOTICES /usr/share/licenses/neuron/THIRD_PARTY_NOTICES
+COPY --from=dashboard /tmp/npm-THIRD-PARTY-NOTICES.txt /usr/share/licenses/neuron/npm-THIRD-PARTY-NOTICES.txt
+COPY --from=dashboard /tmp/npm-licenses.json /usr/share/licenses/neuron/npm-licenses.json
+COPY --from=builder /opt/third-party-licenses/ /usr/share/licenses/neuron/third-party/
+COPY --from=builder /opt/corresponding-source/ /usr/share/licenses/neuron/corresponding-source/
+COPY deploy/dockerhub/nginx.conf /etc/neuron-remote/nginx.conf
+COPY deploy/dockerhub/supervisord.conf /etc/neuron-remote/supervisord.conf
+COPY deploy/dockerhub/neuron-remote-entrypoint.sh /usr/local/bin/neuron-remote-entrypoint
+
+RUN ldconfig && \
+    groupadd --gid 10001 neuron && \
+    useradd --uid 10001 --gid neuron --home-dir /opt/neuron --no-create-home neuron && \
+    install -d -o neuron -g neuron -m 0750 /data && \
+    ln -s /data/config /opt/neuron/config && \
+    ln -s /data/logs /opt/neuron/logs && \
+    ln -s /data/persistence /opt/neuron/persistence && \
+    chmod 0755 /usr/local/bin/neuron-remote-entrypoint
+
+ARG RELEASE_VERSION=unknown
+ARG VCS_REF=unknown
+ARG BUILD_DATE=unknown
+ARG SOURCE_URL=unknown
+RUN printf '%s\n' \
+      'CORRESPONDING SOURCE OFFER' \
+      '' \
+      "Exact release source: ${SOURCE_URL}" \
+      'A complete source snapshot for this image and immutable archives of' \
+      'libraries built from source are also included locally under:' \
+      '/usr/share/licenses/neuron/corresponding-source/' \
+      '' \
+      'License texts and attribution notices are in the parent directory.' \
+      > /usr/share/licenses/neuron/SOURCE_OFFER
+LABEL org.opencontainers.image.title="Neuron Remote" \
+      org.opencontainers.image.description="Neuron edge gateway with remote-control backend and same-origin proxy" \
+      org.opencontainers.image.version="${RELEASE_VERSION}" \
+      org.opencontainers.image.revision="${VCS_REF}" \
+      org.opencontainers.image.created="${BUILD_DATE}" \
+      org.opencontainers.image.source="${SOURCE_URL}" \
+      org.opencontainers.image.licenses="LGPL-3.0-or-later"
+
+VOLUME ["/data"]
+EXPOSE 8080
+HEALTHCHECK --interval=15s --timeout=5s --start-period=60s --retries=8 \
+  CMD wget -q -O- http://127.0.0.1:8080/ >/dev/null 2>&1 && \
+      wget -q -O- http://127.0.0.1:8080/api/v2/remote/connection >/dev/null 2>&1 || exit 1
+
+ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/neuron-remote-entrypoint"]
+CMD ["/usr/bin/supervisord", "-c", "/etc/neuron-remote/supervisord.conf"]

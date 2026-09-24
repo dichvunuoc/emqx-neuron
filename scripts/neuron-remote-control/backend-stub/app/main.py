@@ -42,6 +42,19 @@ def create_app() -> FastAPI:
     runner = AgentRunner()
     service = RemoteControlService(store=store, runner=runner, schema_path=schema_path)
 
+    @app.on_event("startup")
+    def restore_enabled_connection() -> None:
+        # A successful explicit /connect persists enabled=true. Re-create the
+        # agent after a container/host restart without clearing that intent.
+        if service.get_profile().get("enabled"):
+            service.connect()
+
+    @app.on_event("shutdown")
+    def stop_agent_process() -> None:
+        # Stop only the child process; keep enabled=true so the next startup
+        # restores the requested connection.
+        runner.disconnect()
+
     @app.get("/api/v2/remote/connection", response_model=ConnectionProfile)
     def get_connection_profile() -> ConnectionProfile:
         return ConnectionProfile(**service.get_profile())

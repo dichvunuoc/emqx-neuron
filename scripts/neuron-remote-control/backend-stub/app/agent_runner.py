@@ -56,15 +56,16 @@ class AgentRunner:
             self.schema_path,
             "--neuron-base-url",
             self.neuron_base_url,
-            "--neuron-token",
-            self.neuron_token,
             "--policy-version",
             policy_version,
         ]
-        if hmac_secret:
-            cmd.extend(["--hmac-secret", hmac_secret])
 
-        proc = subprocess.run(cmd, capture_output=True, text=True)
+        proc = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            env=self._agent_env(hmac_secret),
+        )
         latency = int((time.time() - started) * 1000)
         if proc.returncode == 0:
             return {
@@ -115,8 +116,6 @@ class AgentRunner:
                 self.schema_path,
                 "--neuron-base-url",
                 self.neuron_base_url,
-                "--neuron-token",
-                self.neuron_token,
                 "--policy-version",
                 policy_version,
                 "--heartbeat-sec",
@@ -124,20 +123,22 @@ class AgentRunner:
                 "--reconnect-sec",
                 str(reconnect_sec),
             ]
-            if hmac_secret:
-                cmd.extend(["--hmac-secret", hmac_secret])
 
             self._set_state("connecting")
             self._process = subprocess.Popen(
                 cmd,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.PIPE,
+                # Inherit the backend log streams. A long-running PIPE that is
+                # never drained eventually fills while an upstream is offline
+                # and silently blocks the reconnect loop.
+                stdout=None,
+                stderr=None,
                 text=True,
+                env=self._agent_env(hmac_secret),
             )
             time.sleep(0.3)
             if self._process.poll() is not None:
-                err = self._process.stderr.read().strip() if self._process.stderr else "agent start failed"
-                self._set_state("failed", last_error=err)
+                err = "agent start failed; check service logs"
+                self._set_state("degraded", last_error=err)
                 return {"error": 1, "status": "failed", "message": err}
 
             self._last_heartbeat_at = datetime.now(timezone.utc)
@@ -162,7 +163,7 @@ class AgentRunner:
     def status(self) -> Dict[str, Any]:
         with self._lock:
             if self._process and self._process.poll() is not None and self._state == "connected":
-                err = self._process.stderr.read().strip() if self._process.stderr else "agent process exited"
+                err = "agent process exited; check service logs"
                 self._set_state("degraded", last_error=err)
 
             return {
@@ -171,6 +172,15 @@ class AgentRunner:
                 "lastHeartbeatAt": self._to_iso(self._last_heartbeat_at),
                 "lastChangeAt": self._to_iso(self._last_change_at),
             }
+
+    def _agent_env(self, hmac_secret: str) -> Dict[str, str]:
+        env = os.environ.copy()
+        env["REMOTE_NEURON_TOKEN"] = self.neuron_token
+        if hmac_secret:
+            env["REMOTE_HMAC_SECRET"] = hmac_secret
+        else:
+            env.pop("REMOTE_HMAC_SECRET", None)
+        return env
 
     @staticmethod
     def _to_iso(dt: Optional[datetime]) -> Optional[str]:

@@ -22,11 +22,13 @@ class ConnectionStore:
         profile = dict(profile)
         profile["updatedAt"] = now
         self.path.write_text(json.dumps(profile, ensure_ascii=True, indent=2), encoding="utf-8")
+        self.path.chmod(0o600)
         return profile
 
     def save_hmac_secret(self, secret: str) -> None:
         # Stub storage only; production should use OS keychain/keystore.
         self.secret_path.write_text(secret, encoding="utf-8")
+        self.secret_path.chmod(0o600)
 
     def load_hmac_secret(self) -> str:
         if not self.secret_path.exists():

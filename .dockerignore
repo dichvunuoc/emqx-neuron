@@ -1,8 +1,16 @@
 .git
 **/build-*
+/build
+/build-*
+/dist
+/neuron-stack-*.tar
+/neuron-dashboard.zip
+/.codegraph
+/.claude
 **/.cache
 **/__pycache__
 *.pyc
 .DS_Store
 neuron-dashboard/node_modules
 neuron-dashboard/dist
+deploy/**/data

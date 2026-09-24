@@ -15,6 +15,8 @@ RUN yarn build
 
 FROM ubuntu:22.04 AS builder
 
+ARG VCS_REF=unknown
+ARG BUILD_DATE=unknown
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update -qq && apt-get install -y -qq \
     build-essential cmake git pkg-config ca-certificates curl python3 \
@@ -100,6 +102,8 @@ RUN rm -rf build-docker-cm4 && mkdir -p build-docker-cm4 && cd build-docker-cm4 
       -DDISABLE_ASAN=ON \
       -DDISABLE_WERROR=ON \
       -DDISABLE_DATALAYERS=ON \
+      -DNEURON_VCS_REF="${VCS_REF}" \
+      -DNEURON_BUILD_DATE_OVERRIDE="${BUILD_DATE}" \
       -DCMAKE_PREFIX_PATH=/usr/local \
       -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF && \
     cmake --build . -j2
@@ -107,6 +111,16 @@ RUN rm -rf build-docker-cm4 && mkdir -p build-docker-cm4 && cd build-docker-cm4 
 COPY --from=dashboard /app/dist /workspace/build-docker-cm4/dist
 
 FROM ubuntu:22.04
+
+ARG RELEASE_VERSION=unknown
+ARG VCS_REF=unknown
+ARG BUILD_DATE=unknown
+ARG SOURCE_URL=unknown
+LABEL org.opencontainers.image.title="Neuron Remote Edge" \
+      org.opencontainers.image.version="${RELEASE_VERSION}" \
+      org.opencontainers.image.revision="${VCS_REF}" \
+      org.opencontainers.image.created="${BUILD_DATE}" \
+      org.opencontainers.image.source="${SOURCE_URL}"
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update -qq && apt-get install -y -qq \

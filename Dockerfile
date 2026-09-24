@@ -14,6 +14,8 @@ RUN yarn build
 
 FROM ghcr.io/neugates/build:x86_64-main AS builder
 
+ARG VCS_REF=unknown
+ARG BUILD_DATE=unknown
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update -qq && apt-get install -y -qq git ca-certificates wget unzip
 
@@ -40,6 +42,8 @@ RUN rm -rf build-docker-neuron && mkdir -p build-docker-neuron && cd build-docke
       -DCMAKE_TOOLCHAIN_FILE=../cmake/x86_64-linux-gnu.cmake \
       -DCMAKE_BUILD_TYPE=Release \
       -DDISABLE_UT=ON \
+      -DNEURON_VCS_REF="${VCS_REF}" \
+      -DNEURON_BUILD_DATE_OVERRIDE="${BUILD_DATE}" \
       -DCMAKE_PREFIX_PATH=/usr/local \
       -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF && \
     cmake --build . -j1
@@ -49,6 +53,16 @@ COPY --from=dashboard /app/dist /workspace/build-docker-neuron/dist
 
 # Same base as builder so linked sysroot + libs resolve at runtime without repackaging every .so.
 FROM ghcr.io/neugates/build:x86_64-main
+
+ARG RELEASE_VERSION=unknown
+ARG VCS_REF=unknown
+ARG BUILD_DATE=unknown
+ARG SOURCE_URL=unknown
+LABEL org.opencontainers.image.title="Neuron Remote Edge" \
+      org.opencontainers.image.version="${RELEASE_VERSION}" \
+      org.opencontainers.image.revision="${VCS_REF}" \
+      org.opencontainers.image.created="${BUILD_DATE}" \
+      org.opencontainers.image.source="${SOURCE_URL}"
 
 ENV LD_LIBRARY_PATH=/usr/local/lib:/home/neuron/main/libs/x86_64-linux-gnu/lib
 # open62541 internal client symbols when loading libplugin-opcua.so

@@ -104,7 +104,7 @@ $ ./neuron --log
 ## Configuration
 
 - Web UI: `http://localhost:7000` (default credentials above)
-- Main config: `neuron.conf`
+- Main runtime config: `neuron.json`
 - Default plugins: `default_plugins.json`
 - Logging: `zlog.conf` / `sdk-zlog.conf`
 
@@ -117,20 +117,12 @@ See the quick start for a hands-on walkthrough.
 - Bulk north MQTT subscribe + optional tags from Excel: [scripts/neuron-excel-import/](scripts/neuron-excel-import/) (`neuron_excel_import.py`, template `.xlsx`, `OPERATOR_NOTES.txt`)
 - CM4 native build helper (no Docker): [scripts/build-native-cm4.sh](./scripts/build-native-cm4.sh)
 - CM4 one-command setup (native only): [scripts/cm4-one-command-setup.sh](./scripts/cm4-one-command-setup.sh)
-- Mini PC Docker stack (Neuron UI from source + remote stub, `curl | bash`): [deploy/minipc/README.md](./deploy/minipc/README.md), [scripts/install-minipc-docker.sh](./scripts/install-minipc-docker.sh), [scripts/minipc-cm4-edge.sh](./scripts/minipc-cm4-edge.sh) (install/update khi đã SSH vào CM4), [scripts/minipc-mac-ssh-deploy.sh](./scripts/minipc-mac-ssh-deploy.sh) (Mac: build + scp + ssh cài trên mini PC), [scripts/minipc-bundle-pack.sh](./scripts/minipc-bundle-pack.sh) (gói thư mục + `docker save` để cài lặp lại / offline), [scripts/docker-release-build.sh](./scripts/docker-release-build.sh)
+- Mini PC Docker stack (Neuron UI + Remote Control): [hướng dẫn cài tiếng Việt](./deploy/minipc/HUONG-DAN-CAI-DAT-NEURON-REMOTE.md), [deploy/minipc/README.md](./deploy/minipc/README.md), [scripts/install-minipc-docker.sh](./scripts/install-minipc-docker.sh), [scripts/minipc-bundle-pack.sh](./scripts/minipc-bundle-pack.sh) (bundle đủ ba image + manifest/checksum cho cài offline), [scripts/docker-release-build.sh](./scripts/docker-release-build.sh)
+- Windows / Docker Desktop one-container image: [deploy/dockerhub/README.md](./deploy/dockerhub/README.md), [Dockerfile.remote](./Dockerfile.remote), [scripts/dockerhub-release-build.sh](./scripts/dockerhub-release-build.sh)
 - CM4 remote install (`curl | bash`, native): [scripts/install-cm4-native-remote.sh](./scripts/install-cm4-native-remote.sh)
   - Example:  
     `curl -fsSL https://raw.githubusercontent.com/dichvunuoc/emqx-neuron/main/scripts/install-cm4-native-remote.sh | bash -s -- --repo https://github.com/dichvunuoc/emqx-neuron.git --branch main --enable-service`
-- CM4 safe upgrade (preserve existing runtime data/config): [scripts/upgrade-cm4-native-safe-remote.sh](./scripts/upgrade-cm4-native-safe-remote.sh)
-  - Example:  
-    `curl -fsSL https://raw.githubusercontent.com/dichvunuoc/emqx-neuron/main/scripts/upgrade-cm4-native-safe-remote.sh | bash -s -- --repo https://github.com/dichvunuoc/emqx-neuron.git --branch main`
-  - Note:
-    - Script auto-fallbacks to a new source folder if current repo is dirty (avoid `git pull` overwrite errors).
-    - Script auto-detects old installer variants that do not support `--dashboard-mode`.
-    - Script also sets up backend-stub + nginx bridge by default so `/api/v2/remote/*` works on the same UI URL.
-  - After install/upgrade:
-    - UI login: `http://<client-ip>:7002/web/#/login`
-    - Remote API on same origin: `http://<client-ip>:7002/api/v2/remote/connection`
+- Legacy CM4 native upgrade helper: [scripts/upgrade-cm4-native-safe-remote.sh](./scripts/upgrade-cm4-native-safe-remote.sh). Back up both `config/` and `persistence/` manually and validate its Nginx port mapping before use; the versioned Docker bundle above is the supported path in this repository for Remote Control installs.
 - Remote Control SOP (Dashboard + backend stub + remote server): [scripts/neuron-remote-control/docs/remote-control-sop.md](./scripts/neuron-remote-control/docs/remote-control-sop.md)
 
 ## Dashboard
@@ -156,6 +148,3 @@ If you believe you have found a security vulnerability, please avoid creating a 
 ## License
 
 See [LICENSE](./LICENSE).
-
-
-

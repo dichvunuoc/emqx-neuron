@@ -1,0 +1,32 @@
+THIRD-PARTY SOFTWARE NOTICES
+
+This image contains the following third-party shared libraries. Complete license
+texts and attributions are installed under /usr/share/licenses/neuron/third-party.
+Exact source archives for libraries built from source are installed under
+/usr/share/licenses/neuron/corresponding-source. Dashboard dependency notices
+and a machine-readable license list are installed beside this file.
+
+open62541 v1.4.6 (50ae40d3c98a5ff0458ee2b5ae92bea53e11af4e)
+Source: https://github.com/open62541/open62541/tree/v1.4.6
+Licenses: MPL-2.0; CC0-1.0; bundled portions under BSD-3-Clause, MIT,
+Apache-2.0 and BSL-1.0. See third-party/open62541/.
+
+Snap7 cc78b9f942712f07ce084c11defe87da240d8e44
+Source: https://github.com/gijzelaerr/snap7/tree/cc78b9f942712f07ce084c11defe87da240d8e44
+License: LGPL-3.0-or-later. See third-party/snap7/.
+
+zlog 1.2.15 (876099f3c66033f3de11d79f63814766b1021dbe)
+Source: https://github.com/HardySimpson/zlog/tree/1.2.15
+License: LGPL-2.1-only. See third-party/zlog/COPYING.
+
+Jansson 99b46bb44bfb9586b232d094f1da96f2660e0341
+Source: https://github.com/neugates/jansson/tree/99b46bb44bfb9586b232d094f1da96f2660e0341
+License: MIT. See third-party/jansson/LICENSE.
+
+libjwt v1.13.1 (c7eab267575d5b25323c01686f6a2d645900126f)
+Source: https://github.com/benmcollins/libjwt/tree/v1.13.1
+License: MPL-2.0. See third-party/libjwt/LICENSE.
+
+NanoSDK/NNG 4fd7ffa90f6e1d42b0017b0fed47fbc6db92002b
+Source: https://github.com/neugates/NanoSDK/tree/4fd7ffa90f6e1d42b0017b0fed47fbc6db92002b
+License: MIT. See third-party/NanoSDK/LICENSE.txt.

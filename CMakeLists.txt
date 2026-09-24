@@ -50,7 +50,10 @@ endif()
 
 
 add_custom_target(neuron-version
-  COMMAND ${CMAKE_COMMAND} -P
+  COMMAND ${CMAKE_COMMAND}
+          -DNEURON_VCS_REF=${NEURON_VCS_REF}
+          -DNEURON_BUILD_DATE_OVERRIDE=${NEURON_BUILD_DATE_OVERRIDE}
+          -P
           ${CMAKE_CURRENT_SOURCE_DIR}/cmake/neuron-version.cmake)
 
 find_package(nng CONFIG REQUIRED)
